@@ -42,4 +42,8 @@ node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.t
 
 GitHub使用私有仓库 [super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)，本机origin为`https://github.com/super-crystal/KnowWeather.git`。完整提交与标签通过Git客户端同步；Windows凭据由Git Credential Manager保存，不把密码或访问令牌写入项目。APK仍与源码分开管理。
 
+2026-10-25迁移已完成：main及11个注释标签已推送；[Releases](https://github.com/super-crystal/KnowWeather/releases)保存全部11个原签名APK和逐版`SHA256SUMS.txt`，当前latest为v1.4.1。上传后回读的22个附件均处于uploaded状态，每版APK大小和SHA256与原归档一致。私有仓库仅授权的GitHub账号可访问，分享下载时仍可沿用既有Drive/邮件约定。
+
+一次性历史上传工具`scripts/publish-archived-releases.py`读取本机旧归档和系统Git凭据，默认仅核验；显式`--apply`才发布。只允许与origin一致且有push权限的私有仓库；已有同名附件须大小/摘要一致才复用，不覆盖不同内容。它用于这次历史迁移，后续新版本按上面的构建和发布流程办理，无需重复运行导入或迁移。
+
 本机还保存了`output/git-migration/weatherly-history.bundle`作为独立Git备份。原11个版本目录及已发安装包仍保留，不删除。迁移核验见 [Git迁移验证](Git迁移验证.md)。

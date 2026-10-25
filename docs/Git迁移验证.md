@@ -6,3 +6,4 @@
 - 既有签名安装包未被改写；构建产物改放output/builds/，缺少原签名时停止或显式Unsigned，不自动新建签名。
 - 本机备份output/git-migration/weatherly-history.bundle可恢复完整Git历史，不含签名材料；日志和机器操作记录保留在忽略的output/与工作记录.md。
 - 用户已提供私有仓库super-crystal/KnowWeather；仓库ID1432842698，账号有push/admin权限，本地origin已关联。首次Git客户端登录使用系统Git Credential Manager的设备授权流程，用户自行在GitHub完成授权；项目不保存登录令牌。远程引用与本地提交/标签的最终核对记录保留在本机output/git-migration/verification.json。
+- main与11个注释标签已推送，12个远程引用逐项核对一致。GitHub插件独立回读11个Releases及22个uploaded附件，APK大小和SHA256与本机原归档相同，校验文件摘要一致；latest确认v1.4.1。原签名包没有重建，签名材料未上传。上传凭据和独立回读摘要保留在本机output/git-migration/。

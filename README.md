@@ -6,6 +6,8 @@
 
 版本通过 Git 提交和 `v1.0.0`～`v1.4.1` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases或既有网盘发布。私有源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
 
+11个历史版本的原签名APK及`SHA256SUMS.txt`已上传到 [全部发布版本](https://github.com/super-crystal/KnowWeather/releases)，[当前版1.4.1](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.1)可直接查看安装包和修改说明。私有仓库下载需登录有权限的GitHub账号。
+
 右上角“城市”支持搜索、添加、切换、上移排序和移除，最多保存 20 个城市。“天气详情”提供实况、48 小时、15 日、空气质量、气象信息、日出日落、生活建议、降水雷达、台风路径、双城对比和天气预警。不含广告或内容推荐。晴、多云、阴、雾、雨、雪、雷暴及晴朗/多云夜晚分别展示对应背景，应用界面统一浅色，不随系统进入深色模式；实际夜间天气背景仍保留。
 
 ## 数据与覆盖
