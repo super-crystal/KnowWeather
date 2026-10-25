@@ -59,7 +59,7 @@ public final class MainActivity extends Activity {
     applyBars(isSystemDark());
     WebSettings settings = webView.getSettings();
     settings.setJavaScriptEnabled(true);
-    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.2.4");
+    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.3.0");
     settings.setDomStorageEnabled(true);
     settings.setGeolocationEnabled(true);
     settings.setAllowFileAccess(false);

@@ -57,3 +57,22 @@ button{transition:background-color .18s ease,opacity .18s ease;touch-action:mani
 .tab-outgoing .detail-content{max-width:none}
 .tabs-moving{overflow:hidden}
 .tabs-moving #detailContent{will-change:transform;contain:paint}
+
+/* Container motion reveals a full-size page; text is never stretched with the button. */
+button:active,a:active{scale:1}
+.page-dialog::backdrop{background:transparent}
+.page-expanding,.page-leaving{will-change:clip-path;contain:paint;isolation:isolate}
+.page-morph-cover{position:absolute;left:0;top:0;z-index:3000;pointer-events:none;overflow:hidden}
+.page-morph-source{position:absolute!important;pointer-events:none!important;box-sizing:border-box}
+.detail-tabs button{transition:color .2s ease,font-weight .2s ease}
+.tab-outgoing{contain:strict}
+.refresh-button{display:inline-grid;place-items:center}
+.refresh-button .refresh-arrow,.refresh-button .refresh-spinner{display:block;grid-area:1/1;transition:opacity .14s ease;animation:none}
+.refresh-button .refresh-arrow{opacity:1}
+.refresh-button .refresh-spinner{opacity:0;visibility:hidden}
+.refresh-button.is-refreshing .refresh-arrow{display:block;opacity:0}
+.refresh-button.is-refreshing .refresh-spinner{opacity:1;visibility:visible;animation:refresh-turn .8s linear infinite}
+::view-transition-old(root){animation:theme-frame-out .22s ease both;mix-blend-mode:normal}
+::view-transition-new(root){animation:none;mix-blend-mode:normal}
+@keyframes theme-frame-out{to{opacity:0}}
+@media(prefers-reduced-motion:reduce){::view-transition-old(root),::view-transition-new(root){animation:none!important}}

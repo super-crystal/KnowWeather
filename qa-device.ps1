@@ -2,7 +2,7 @@ param([ValidateSet('Dump','Tap','Text','Swipe','Capture')][string]$Action='Dump'
 $ErrorActionPreference='Stop'
 $adb='C:/Android/adb.exe'
 $qaRoot=Join-Path ([IO.Path]::GetTempPath()) 'WeatherlyAndroid16QA'
-$screens=Join-Path $PSScriptRoot 'output/qa-1.2.4'
+$screens=Join-Path $PSScriptRoot 'output/qa-1.3.0'
 New-Item -ItemType Directory -Force -Path $screens | Out-Null
 function Dump-WeatherUI {
   & $adb -s emulator-5556 shell uiautomator dump /sdcard/weatherly-v12.xml | Out-Null
@@ -40,3 +40,4 @@ if($Action -eq 'Swipe'){
   if($Value -eq 'horizontal'){& $adb -s emulator-5556 shell input swipe ([int]($b[0]+($b[2]-$b[0])*.8)) $top ([int]($b[0]+($b[2]-$b[0])*.2)) $top 400}else{& $adb -s emulator-5556 shell input swipe $x $bottom $x $top 450};exit
 }
 $tree.SelectNodes('//node') | Where-Object {$b=Get-Bounds $_;($_.text -or $_.'content-desc') -and $b[3]-$b[1] -gt 5 -and $b[2]-$b[0] -gt 5} | ForEach-Object {Write-Output "$($_.text) $($_.'content-desc') $($_.bounds)"}
+
