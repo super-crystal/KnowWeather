@@ -8,6 +8,8 @@
 
 开发记录写在本机`工作记录.md`（不上传），重要的项目状态同步到本文件。不要重新扫描完整聊天、原APK或全部历史版本。密钥单独保存；不提交`.signing/`。既有版本标签和发布包保持不变，后续用新提交及新标签发布。
 
+用户已确认后续新版默认完整交付：完成修改与验证，更新版本说明/发布清单/工作记录，提交推送代码、创建推送版本标签、上传正式APK与校验文件到对应GitHub Release，并回读确认。具体顺序见`docs/Git版本管理.md`；这项长期约定无需每次重新确认。
+
 Git迁移已核对11个快照；最新纯源码导出通过33项检查和独立Unsigned构建，28项Web资产、DEX/资源表与正式1.4.1一致。详见`docs/Git迁移验证.md`。私有远程仓库为https://github.com/super-crystal/KnowWeather，本机origin使用其HTTPS地址，远程同步通过Git Credential Manager授权。
 
 2026-10-25已完成远程同步：main、11个注释标签及11个正式Releases。每版含原签名APK和SHA256SUMS.txt，GitHub回读大小/摘要与原件一致；latest为v1.4.1。[发布入口](https://github.com/super-crystal/KnowWeather/releases)。本轮仅迁移版本管理，未修改应用运行功能或重新发送旧版邮件。
