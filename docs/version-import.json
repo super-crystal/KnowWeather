@@ -1,8 +1,8 @@
 {
-  "version": "1.2.2",
-  "version_code": 5,
-  "apk_sha256": "D8A51549D2D97120E5B411B30BBDF517D7C556ED917B410B98E27178BB56B72D",
-  "apk_bytes": 797049,
+  "version": "1.2.3",
+  "version_code": 6,
+  "apk_sha256": "6641BA09BBA9CD6571764BF9F41B4E33C95BF868B4DAB11653D59643E6B3B8CE",
+  "apk_bytes": 801148,
   "complete_native_source": false,
   "imported_on": "2026-10-25",
   "history_note": "Imported verified archive snapshot; original commit history and author dates unavailable.",
