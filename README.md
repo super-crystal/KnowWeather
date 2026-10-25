@@ -1,10 +1,10 @@
-# 知天气 Android 1.3.1
+# 知天气 Android 1.4.0
 
-支持十五日预报、随天气变化的背景、城市管理和天气详情。包名 cn.weatherly.app，版本代码 9，最低 Android 6.0（API 23），编译与目标 Android 16（API 36）。沿用原签名，可覆盖升级旧版。
+支持十五日预报、随天气变化的背景、城市管理和天气详情。包名 cn.weatherly.app，版本代码 10，最低 Android 6.0（API 23），编译与目标 Android 16（API 36）。沿用原签名，可覆盖升级旧版。
 
 后续续作优先阅读 [工作记录](工作记录.md)，其中记录当前状态、验证结果、下一步及插件约定；阶段完成或中断前先更新记录。1.3.0 参考 FlClash 的容器裁剪、短距离分类切换、运动期间合并刷新和快照主题淡变，独立适配 WebView 与 Android；分析及固定源码链接见 [FlClash动画分析](docs/FlClash动画分析.md)。
 
-分版本项目归档与对应说明见 [版本归档目录](../../README.md)。此目录为现有开发工作区；归档保留 1.0.0～1.3.1 的真实安装包及匹配构建文件，原始网页版另存为未编号快照。
+分版本项目归档与对应说明见 [版本归档目录](../weatherly-versions/README.md)。此目录为现有开发工作区；归档保留 1.0.0～1.4.0 的真实安装包及匹配构建文件，原始网页版另存为未编号快照。
 
 右上角“城市”支持搜索、添加、切换、上移排序和移除，最多保存 20 个城市。“天气详情”提供实况、48 小时、15 日、空气质量、气象信息、日出日落、生活建议、降水雷达、台风路径、双城对比和天气预警。不含广告或内容推荐。晴、多云、阴、雾、雨、雪、雷暴及晴朗/多云夜晚分别展示对应背景，应用界面统一浅色，不随系统进入深色模式；实际夜间天气背景仍保留。
 
@@ -26,13 +26,13 @@ APK 内置界面，可离线打开并使用最近缓存；获取天气和地图�
 
 ## 构建
 
-需要 Java 21、Android SDK Platform 36、Build Tools 35.0.0 和 Node.js。执行 ./build.ps1 -SdkRoot /path/to/android-sdk -JavaHome /path/to/jdk-21；测试执行 node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.test.mjs weather-data.test.mjs。
+需要 Java 21、Android SDK Platform 36、Build Tools 35.0.0 和 Node.js。执行 ./build.ps1 -SdkRoot /path/to/android-sdk -JavaHome /path/to/jdk-21；测试执行 node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.test.mjs weather-data.test.mjs sky.test.mjs。
 
 prepare-assets.mjs 从 web-src/ 打包离线界面，并生成原有城市目录。Leaflet 1.9.4 随包附带，无需运行时从 CDN 加载。构建脚本使用官方 AAPT2、D8、zipalign、apksigner，校验资产路径与签名。原有已发布网页保持原版本。
 
 原生层仅提供本地安全域的受限天气快照同步，以及固定气象机构的公开数据请求；不提供通用网络代理或任意代码执行接口。外部主页面链接由系统浏览器打开。
 
-签名密钥仅保存在本地 .signing/，必须保留才能持续覆盖升级；不要上传或发送密钥。安装包不包含私钥。Android 16 验证截图和记录位于 output/qa-1.3.1/。
+签名密钥仅保存在本地 .signing/，必须保留才能持续覆盖升级；不要上传或发送密钥。安装包不包含私钥。Android 16 验证截图和记录位于 output/qa-1.4.0/。
 
 1.2.1 修复底图空白：内置 Natural Earth 1:50m 海岸线、湖泊和主要城市；在线 OpenStreetMap 加载失败或超过8秒时自动显示内置底图，支持手动切换。底图与雷达加载状态分别显示。台风初始范围包含完整路径与当前城市。内置底图不是街道导航图，天气与台风新数据仍需联网。原始地理数据版本及校验值见 web-src/GEOGRAPHY-SOURCES.md。
 
@@ -49,3 +49,6 @@ prepare-assets.mjs 从 web-src/ 打包离线界面，并生成原有城市目录
 1.3.1：数据源、天气/台风底图、双城对比城市选择统一为圆角底部面板，支持选中标记、说明、按压及滑入/退出动画，系统返回仅关闭当前面板。应用固定浅色，旧深色/随系统偏好迁移为浅色；卡片外观改为分段按钮，旧深色/随系统卡片偏好迁移为随天气。
 
 本机模拟器37.2.12的报告程序曾弹出0x80000003；底层故障未确认，使用 start-qa-emulator.ps1 的 -crash-report-mode disabled 绕过，重启后Android16可用且未见报告程序进程。该设置只影响本项目测试模拟器，不更改Windows错误报告或其他应用。
+
+
+1.4.0：静态天气背景升级为独立 Canvas 动态天空，云、光晕、星月、雾、雨雪随实际天气变化。多云/云夜12带云层铺满背景，阴/雷暴14带，雨雪11带；交叠循环与远近漂移保持层次。静态画面作为不可用回退；后台、弹窗、滚动与减少动态效果时暂停，像素/粒子预算与过载降级控制开销。参考分析见 [ColorOS动态天气分析](docs/ColorOS动态天气分析.md)，未打包第三方厂商素材。
