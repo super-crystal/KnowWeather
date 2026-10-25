@@ -24,7 +24,7 @@ git push origin main
 
 ## 构建和发布
 
-需要JDK21、Node.js、Android SDK Platform36及BuildTools35.0.0。城市目录已在源码中，构建不依赖工作区外的原始网站。
+当前构建脚本使用Windows PowerShell/PowerShell7、JDK21、Node.js、Android SDK Platform36及BuildTools35.0.0。城市目录已在源码中，构建不依赖工作区外的原始网站。
 
 ```powershell
 node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.test.mjs weather-data.test.mjs sky.test.mjs
@@ -41,3 +41,5 @@ node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.t
 跟踪Java/Web源码、应用资源、构建脚本、测试、版本说明及云图来源记录。`.signing/`、密钥/密码文件、APK、输出、缓存、研究网页快照和本机工作日志被忽略；不把SDK、模拟器、ColorOS原APK或反编译目录搬进仓库。云图及地图/Leaflet来源继续按既有文档记录，不为整个项目随意添加开源授权。
 
 GitHub仓库优先使用私有可见性。当前连接插件可以读写已授权的已有仓库，但不能创建新仓库；提供空私有仓库地址后再连接和同步。本地Git已经能独立使用，不需要等远程仓库创建。
+
+本机还保存了`output/git-migration/weatherly-history.bundle`作为独立Git备份。原11个版本目录及已发安装包仍保留，不删除。迁移核验见 [Git迁移验证](Git迁移验证.md)。
