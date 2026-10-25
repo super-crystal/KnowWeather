@@ -14,7 +14,7 @@ if (!AbortSignal.any) AbortSignal.any = signals => {
 };
 if (!Array.prototype.at) Array.prototype.at = function (index) { return this[index < 0 ? this.length + index : index]; };
 try {if(!localStorage.getItem('weatherly-theme'))localStorage.setItem('weatherly-theme',JSON.stringify('auto'));}catch{}
-const reportTheme = () => console.log('WEATHERLY_THEME:' + document.documentElement.dataset.theme);
+const reportTheme = () => console.log(!document.querySelector('dialog[open]')&&document.body?.dataset.scene?'WEATHERLY_SKY:'+document.body.dataset.scene:'WEATHERLY_THEME:' + document.documentElement.dataset.theme);
 new MutationObserver(reportTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 window.weatherlySystemTheme = dark => {
   try {
@@ -26,7 +26,8 @@ window.weatherlySystemTheme = dark => {
 };
 document.addEventListener('DOMContentLoaded',()=>{
   reportTheme();
-  document.getElementById('mobileLocate').addEventListener('click',()=>document.getElementById('locate').click());
+  document.getElementById('mobileLocate')?.addEventListener('click',()=>document.getElementById('locate').click());
+  new MutationObserver(reportTheme).observe(document.body,{subtree:true,attributes:true,attributeFilter:['data-scene','open']});
 });
 let nativeSyncTimer;
 window.weatherlySync = data => {

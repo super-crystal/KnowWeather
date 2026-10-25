@@ -1,307 +1,90 @@
-const $ = id => document.getElementById(id);
-const icon = (name, cls = '') => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
-const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const storage = {get(key, fallback) {try {return JSON.parse(localStorage.getItem(key)) ?? fallback;} catch {return fallback;}},set(key, value) {try {localStorage.setItem(key, JSON.stringify(value));} catch {}}};
-const cities = [
-  {name:'北京',aliases:'beijing peking',latitude:39.9042,longitude:116.4074,country:'中国',country_code:'CN',admin1:'北京市',timezone:'Asia/Shanghai'},
-  {name:'上海',aliases:'shanghai',latitude:31.2304,longitude:121.4737,country:'中国',country_code:'CN',admin1:'上海市',timezone:'Asia/Shanghai'},
-  {name:'杭州',aliases:'hangzhou',latitude:30.2741,longitude:120.1551,country:'中国',country_code:'CN',admin1:'浙江省',timezone:'Asia/Shanghai'},
-  {name:'广州',aliases:'guangzhou canton',latitude:23.1291,longitude:113.2644,country:'中国',country_code:'CN',admin1:'广东省',timezone:'Asia/Shanghai'},
-  {name:'深圳',aliases:'shenzhen',latitude:22.5431,longitude:114.0579,country:'中国',country_code:'CN',admin1:'广东省',timezone:'Asia/Shanghai'},
-  {name:'成都',aliases:'chengdu',latitude:30.5728,longitude:104.0668,country:'中国',country_code:'CN',admin1:'四川省',timezone:'Asia/Shanghai'},
-  {name:'武汉',aliases:'wuhan',latitude:30.5928,longitude:114.3055,country:'中国',country_code:'CN',admin1:'湖北省',timezone:'Asia/Shanghai'},
-  {name:'西安',aliases:'xian xi an',latitude:34.3416,longitude:108.9398,country:'中国',country_code:'CN',admin1:'陕西省',timezone:'Asia/Shanghai'},
-  {name:'重庆',aliases:'chongqing',latitude:29.563,longitude:106.5516,country:'中国',country_code:'CN',admin1:'重庆市',timezone:'Asia/Shanghai'},
-  {name:'南京',aliases:'nanjing',latitude:32.0603,longitude:118.7969,country:'中国',country_code:'CN',admin1:'江苏省',timezone:'Asia/Shanghai'},
-  {name:'香港',aliases:'hong kong hongkong',latitude:22.3193,longitude:114.1694,country:'中国香港',country_code:'HK',admin1:'香港',timezone:'Asia/Hong_Kong'},
-  {name:'台北',aliases:'taipei taibei',latitude:25.033,longitude:121.5654,country:'中国台湾',country_code:'TW',admin1:'台北',timezone:'Asia/Taipei'},
-  {name:'东京',aliases:'tokyo dongjing',latitude:35.6762,longitude:139.6503,country:'日本',country_code:'JP',admin1:'东京都',timezone:'Asia/Tokyo'},
-  {name:'纽约',aliases:'new york newyork niuyue',latitude:40.7128,longitude:-74.006,country:'美国',country_code:'US',admin1:'纽约州',timezone:'America/New_York'},
-  {name:'伦敦',aliases:'london lundun',latitude:51.5074,longitude:-.1278,country:'英国',country_code:'GB',admin1:'英格兰',timezone:'Europe/London'},
-  {name:'巴黎',aliases:'paris bali',latitude:48.8566,longitude:2.3522,country:'法国',country_code:'FR',admin1:'法兰西岛',timezone:'Europe/Paris'},
-  {name:'柏林',aliases:'berlin bolin',latitude:52.52,longitude:13.405,country:'德国',country_code:'DE',admin1:'柏林',timezone:'Europe/Berlin'},
-  {name:'多伦多',aliases:'toronto duolunduo',latitude:43.6532,longitude:-79.3832,country:'加拿大',country_code:'CA',admin1:'安大略省',timezone:'America/Toronto'},
-  {name:'悉尼',aliases:'sydney xini',latitude:-33.8688,longitude:151.2093,country:'澳大利亚',country_code:'AU',admin1:'新南威尔士州',timezone:'Australia/Sydney'},
-  {name:'新加坡',aliases:'singapore xinjiapo',latitude:1.3521,longitude:103.8198,country:'新加坡',country_code:'SG',admin1:'新加坡',timezone:'Asia/Singapore'}
-];
-const sources = {
-  CMA:{model:'cma',name:'中国气象局 CMA',detail:'GRAPES 全球模型 · 通过 Open-Meteo'},
-  CN:{model:'ecmwf_ifs025',name:'ECMWF IFS',detail:'欧洲中期天气预报中心 · 全球模型'},
-  US:{model:'gfs_seamless',name:'NOAA GFS',detail:'美国国家海洋和大气管理局'},
-  JP:{model:'jma_seamless',name:'JMA',detail:'日本气象厅 · 日本地区模型'},
-  DE:{model:'icon_seamless',name:'DWD ICON',detail:'德国气象局 · 地区模型'},
-  FR:{model:'meteofrance_seamless',name:'Météo-France',detail:'法国气象局 · 地区模型'},
-  CA:{model:'gem_seamless',name:'GEM',detail:'加拿大环境与气候变化部'},
-  GLOBAL:{model:'ecmwf_ifs025',name:'ECMWF IFS',detail:'欧洲中期天气预报中心 · 全球模型'},
-  FALLBACK:{model:'best_match',name:'Open-Meteo Best Match',detail:'自动组合可用模型 · 备用来源'}
-};
-const validCity = c => c && typeof c.name === 'string' && c.name.length < 150 && Number.isFinite(c.latitude) && Number.isFinite(c.longitude) && Math.abs(c.latitude)<=90 && Math.abs(c.longitude)<=180;
-let selectedCity = storage.get('weatherly-city', cities[0]);
-if (!validCity(selectedCity)) selectedCity = cities[0];
-let savedCities = storage.get('weatherly-saved', [cities[0],cities[1],cities[2]]);
-if (!Array.isArray(savedCities)) savedCities = [cities[0],cities[1],cities[2]];
-savedCities = savedCities.filter(validCity).slice(0,6);
-let theme = storage.get('weatherly-theme','light');
-let unit = storage.get('weatherly-unit','c');
-if (!['c','f'].includes(unit)) unit='c';
-let chartMode='temperature', weather=null, activeSource=null, fetchedAt=null, loading=false, requestSequence=0, weatherController, searchController, searchSequence=0, searchTimer, toastTimer;
-const mediaTheme = matchMedia('(prefers-color-scheme: dark)');
-let chinaSource = storage.get('weatherly-china-source','auto');
-if(!['auto','cma','ecmwf'].includes(chinaSource))chinaSource='auto';
-const inChina = city => ['CN','HK','MO','TW'].includes(city.country_code) || (!city.country_code && city.latitude>=18 && city.latitude<=54 && city.longitude>=73 && city.longitude<=135);
-const sourceFor = city => inChina(city) && chinaSource==='cma' ? sources.CMA : inChina(city) && chinaSource==='ecmwf' ? sources.CN : sources[city.country_code] || sources.GLOBAL;
-function syncNative(){if(typeof window.weatherlySync==='function')window.weatherlySync({city:selectedCity,requested:sourceFor(selectedCity).model,unit,theme,weather,source:activeSource,fetchedAt:fetchedAt?.toISOString(),cached:/缓存|失败/.test($('liveState').textContent)});}
-const finite = n => typeof n==='number' && Number.isFinite(n);
-const fmt = (n, decimal=0) => finite(n) ? n.toFixed(decimal) : '—';
-const temp = n => finite(n) ? Math.round(unit==='f' ? n*9/5+32 : n) : '—';
-const tempValue = n => unit==='f' ? n*9/5+32 : n;
-const cityKey = city => `${city.latitude.toFixed(3)},${city.longitude.toFixed(3)}`;
-function condition(code,isDay=true) {
-  if (!finite(code)) return {name:'暂无数据',icon:'cloud',cls:'cloudy'};
-  if (code===0) return {name:isDay?'晴朗':'晴朗的夜晚',icon:isDay?'sun':'moon',cls:''};
-  if (code<=2) return {name:code===1?'晴间多云':'多云',icon:isDay?'sun':'moon',cls:''};
-  if (code===3) return {name:'阴天',icon:'cloud',cls:'cloudy'};
-  if (code===45 || code===48) return {name:'雾',icon:'cloud',cls:'cloudy'};
-  if ((code>=71&&code<=77)||code===85||code===86) return {name:'降雪',icon:'snow',cls:'wet'};
-  if (code>=95) return {name:'雷阵雨',icon:'rain',cls:'wet'};
-  if (code>=51) return {name:code<=57?'毛毛雨':code>=80?'阵雨':'雨',icon:'rain',cls:'wet'};
-  return {name:'多云',icon:'cloud',cls:'cloudy'};
+import {finite,validCity,cityKey,inChina,sourceFor,condition,getJSON,fetchWeather,hours,distance} from './weather-data.mjs';
+import {cities} from './cities.mjs';
+const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+let city=store.get('weatherly-city',cities[0]);if(!validCity(city))city=cities[0];
+let saved=store.get('weatherly-saved',cities.slice(0,3));if(!Array.isArray(saved))saved=[];saved=saved.filter(validCity).filter((c,i,a)=>a.findIndex(x=>cityKey(x)===cityKey(c))===i).slice(0,20);if(!saved.length)saved=[city];
+let choice=store.get('weatherly-china-source','auto');if(!['auto','cma','ecmwf'].includes(choice))choice='auto';
+let theme=store.get('weatherly-theme','auto'),unit=store.get('weatherly-unit','c');if(!['light','dark','auto'].includes(theme))theme='auto';if(!['c','f'].includes(unit))unit='c';
+let pack=null,air=null,cached=false,loading=false,loadId=0,loadController,airId=0,searchId=0,searchController,searchTimer,editing=false,activeTab='live',toastTimer,compareId=0,compareDay=0,comparison=null,map=null,radarLayer=null,coverageLayer=null,radarTimer=null,radarFrames=[],stormMap=null,stormId=0,storms=null,selectedStorm=null,alerts=null,alertNational=false;
+const cache=new Map(),readCache=c=>cache.get(cityKey(c)+':'+choice)||store.get('weatherly-v12-cache:'+cityKey(c)+':'+choice,null);
+function putCache(c,p){const key=cityKey(c)+':'+choice;cache.set(key,p);store.set('weatherly-v12-cache:'+key,p);let keys=store.get('weatherly-v12-cache-keys',[]).filter(x=>x!==key);keys.push(key);while(keys.length>8){try{localStorage.removeItem('weatherly-v12-cache:'+keys.shift())}catch{}}store.set('weatherly-v12-cache-keys',keys);}
+const fmt=(n,d=0)=>finite(n)?n.toFixed(d):'—',temp=n=>finite(n)?Math.round(unit==='f'?n*9/5+32:n):'—',tempValue=n=>unit==='f'?n*9/5+32:n;
+const paths={sun:'<circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/>',moon:'<path d="M20 15A9 9 0 0 1 9 4a9 9 0 1 0 11 11Z" fill="currentColor" stroke="none"/>',cloud:'<path d="M5 19a4.5 4.5 0 0 1 0-9 6 6 0 0 1 11-2 5.5 5.5 0 0 1 3 11Z" fill="currentColor" stroke="none"/>',rain:'<path d="M5 14a4 4 0 0 1 0-8 6 6 0 0 1 11 1 4 4 0 0 1 3 7"/><path d="m7 17-1 4m6-4-1 4m6-4-1 4"/>',snow:'<path d="M12 2v20M3.4 7l17.2 10M3.4 17 20.6 7M8 4l4 3 4-3M8 20l4-3 4 3M3 11l4-1-1-4M21 13l-4 1 1 4M3 13l4 1-1 4M21 11l-4-1 1-4"/>',fog:'<path d="M3 7c3-4 6 4 9 0s6 4 9 0M3 12c3-4 6 4 9 0s6 4 9 0M3 17c3-4 6 4 9 0s6 4 9 0"/>',wind:'<path d="M3 8h12a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h6a3 3 0 1 1-3 3"/>',drop:'<path d="M12 3S5 11 5 15a7 7 0 0 0 14 0c0-4-7-12-7-12Z"/><path d="M8 15a4 4 0 0 0 4 4"/>',thermo:'<path d="M9 14V5a3 3 0 0 1 6 0v9a5 5 0 1 1-6 0Z"/><path d="M12 7v10m5-10h3m-3 4h3"/>',eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',pressure:'<circle cx="12" cy="12" r="9"/><path d="m12 12 4-4M7 16h10"/>',shirt:'<path d="m8 3-6 4 3 5 3-2v11h8V10l3 2 3-5-6-4a4 4 0 0 1-8 0Z"/>',umbrella:'<path d="M2 12a10 10 0 0 1 20 0H2Zm10-10v17a3 3 0 0 0 6 0"/>',run:'<circle cx="15" cy="4" r="2"/><path d="m8 9 5-2 4 5 4 1M13 7l-3 8-5 5m5-5 5 2 1 5M8 9l-3 4"/>',car:'<path d="m5 7-2 7v6h3v-3h12v3h3v-6l-2-7H5Zm-2 7h18M6 7l1-4h10l1 4M6 14v1m12-1v1"/>',pin:'<path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/><circle cx="12" cy="10" r="2.5"/>'};
+function icon(name){let p=paths[name];if(name==='partly')p='<circle cx="8" cy="8" r="4" fill="currentColor" stroke="none"/><path d="M7 20a4 4 0 0 1 0-8 5 5 0 0 1 9-2 5 5 0 0 1 3 10Z" fill="#fff" stroke="none"/>';if(name==='mooncloud')p=paths.moon+'<path d="M5 20a3 3 0 0 1 0-6 4 4 0 0 1 7-1 4 4 0 0 1 3 7Z" fill="#fff" stroke="none"/>';if(name==='thunder')p=paths.rain+'<path d="m13 10-3 7h4l-2 6 7-10h-5l2-3" fill="#ffe78b" stroke="none"/>';return `<svg class="weather-symbol ${esc(name)}" viewBox="0 0 24 24" aria-hidden="true">${p||paths.sun}</svg>`;}
+function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,4000);}
+function note(text=''){$('notice').textContent=text;$('notice').hidden=!text;}
+function applyTheme(v){theme=v;store.set('weatherly-theme',v);document.documentElement.dataset.theme=v==='auto'?(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):v;$('themeSelect').value=v;syncNative();}
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{if(theme==='auto')applyTheme(theme)});
+function syncNative(){window.weatherlySync?.({city,requested:sourceFor(city,choice).model,unit,theme,weather:pack?.data,source:pack?.source,fetchedAt:pack?.fetchedAt,cached});}
+function cityClock(){try{return new Intl.DateTimeFormat('zh-CN',{timeZone:pack?.data?.timezone||city.timezone||'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date())}catch{return'—'}}
+function fetchedTime(p=pack){try{return new Intl.DateTimeFormat('zh-CN',{timeZone:p.data.timezone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(p.fetchedAt))}catch{return'—'}}
+function dayName(date,i){return i===0?'今天':i===1?'明天':new Intl.DateTimeFormat('zh-CN',{weekday:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));}
+function dateShort(date){return `${Number(date.slice(5,7))}月${Number(date.slice(8,10))}日`;}
+function persistCity(){store.set('weatherly-city',city);store.set('weatherly-saved',saved);}
+function selectCity(c){if(!validCity(c))return;if(!saved.some(x=>cityKey(x)===cityKey(c))){if(saved.length>=20){toast('已保存 20 座城市，请先移除一座');return;}saved.push(c);}city=c;persistCity();compareA=cityKey(c);$('cityPage').close();$('cityInput').value='';pack=readCache(city);cached=!!pack;air=null;alerts=null;renderHome();loadWeather();}
+async function loadWeather(){const seq=++loadId;loadController?.abort();loadController=new AbortController();loading=true;$('refresh').disabled=true;$('liveState').textContent=pack?'更新天气中…':'正在获取天气…';const target=city,currentChoice=choice;loadAir(target);
+ try{const p=await fetchWeather(target,currentChoice,loadController.signal);if(seq!==loadId)return;pack=p;cached=false;putCache(target,p);const supplementedDays=p.data.daySources.filter(x=>x!==p.source.name).length;note(p.fallback?'所选来源暂不可用，已使用 Open-Meteo 综合模型。':supplementedDays?`部分日期由综合模型补齐，15 天预报中逐日标明来源。`:'');}
+ catch(e){if(seq!==loadId)return;if(pack){cached=true;note('网络暂不可用，显示上次缓存。请查看获取时间。')}else note('暂时无法取得天气，请检查网络后刷新。');}
+ finally{if(seq===loadId){loading=false;$('refresh').disabled=false;renderHome();syncNative();if($('detailsPage').open&&!['map','typhoon','alerts','compare'].includes(activeTab))renderDetail();}}
 }
-function applyTheme(value) {
-  theme=['light','dark','auto'].includes(value)?value:'light';
-  const actual=theme==='auto'?(mediaTheme.matches?'dark':'light'):theme;
-  document.documentElement.dataset.theme=actual;
-  document.querySelector('meta[name="theme-color"]').content=actual==='dark'?'#151d26':'#f5f7f9';
-  document.querySelectorAll('.theme-control button').forEach(b=>{b.classList.toggle('selected',b.dataset.theme===theme);b.setAttribute('aria-pressed',b.dataset.theme===theme);});
-  $('quickTheme').innerHTML=icon(actual==='light'?'moon':'sun');
-  $('quickTheme').setAttribute('aria-label',actual==='light'?'切换深色主题':'切换浅色主题');
-  storage.set('weatherly-theme',theme);
-  syncNative();
+async function loadAir(c){const seq=++airId;air=null;renderAirSummary();try{const u=new URL('https://air-quality-api.open-meteo.com/v1/air-quality');u.search=new URLSearchParams({latitude:c.latitude,longitude:c.longitude,timezone:'auto',current:'us_aqi,pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone',hourly:'us_aqi,pm2_5,pm10',forecast_days:3});const d=await getJSON(u);if(seq!==airId||cityKey(c)!==cityKey(city))return;air={...d,fetchedAt:new Date().toISOString()};store.set('weatherly-v12-air:'+cityKey(c),air);renderAirSummary();if($('detailsPage').open&&activeTab==='air')renderDetail();}catch{if(seq!==airId)return;const old=store.get('weatherly-v12-air:'+cityKey(c),null);if(old)air={...old,cached:true};renderAirSummary();if($('detailsPage').open&&activeTab==='air')renderDetail();}}
+function advice(data=pack?.data){const c=data?.current||{},d=data?.daily||{},h=hours(data,24),rain=h.some(x=>x.precipitation>0.2||x.precipitation_probability>=50);return rain?{name:'随身带伞',icon:'umbrella',text:'未来 24 小时有降水可能，出门带一把伞。'}:c.temperature_2m>=28?{name:'轻装出门',icon:'shirt',text:'天气较热，选择透气衣物，及时补水。'}:c.temperature_2m<10?{name:'添衣保暖',icon:'shirt',text:'气温偏低，出门穿暖一些，留意早晚温差。'}:c.temperature_2m<22||d.temperature_2m_min?.[0]<18?{name:'携带外套',icon:'shirt',text:'白天气温适中，早晚偏凉，带件外套更方便。'}:{name:'舒适出行',icon:'shirt',text:'气温较舒适，把好天气装进今天的计划。'};}
+function life(data=pack?.data){const c=data?.current||{},d=data?.daily||{},a=advice(data),uv=d.uv_index_max?.[0],rain=d.precipitation_sum?.[0],wind=d.wind_speed_10m_max?.[0];return[a,{name:finite(uv)?uv>=6?'加强防晒':uv>=3?'注意防晒':'紫外线较低':'防晒数据暂无',icon:'sun',text:finite(uv)?`今日最高紫外线指数 ${fmt(uv,1)}，户外活动留意日照强度。`:'该数据源暂未提供紫外线指数。'},{name:finite(rain)?rain>1?'户外注意降雨':'适合户外活动':'降水数据暂无',icon:'run',text:finite(rain)?`预计今日降水 ${fmt(rain,1)} mm，${rain>1?'可安排室内活动。':'结合实时天气安排活动。'}`:'当前暂无日降水资料。'},{name:finite(rain)?rain>1?'洗车可缓一缓':'可安排洗车':'洗车建议暂无',icon:'car',text:finite(rain)?rain>1?'今日可能下雨，可延后洗车。':'按降水预报判断，今日洗车影响较小。':'需取得降水预报后判断。'},{name:finite(wind)?wind>=40?'注意防风':'风力较平稳':'风力数据暂无',icon:'wind',text:finite(wind)?`今日最大风速 ${fmt(wind,1)} km/h，${wind>=40?'户外固定好易吹动物品。':'出行可留意阵风变化。'}`:'暂无日最大风速资料。'},{name:finite(c.relative_humidity_2m)?c.relative_humidity_2m<35?'注意保湿':'留意室内通风':'湿度数据暂无',icon:'drop',text:finite(c.relative_humidity_2m)?`当前相对湿度 ${fmt(c.relative_humidity_2m)}%，保持室内舒适。`:'暂无相对湿度资料。'}];}
+function renderHome(){const w=pack?.data,c=w?.current,d=w?.daily;$('cityName').textContent=city.name;$('cityRegion').textContent=[city.country,city.admin1].filter(Boolean).join(' · ')||'当前位置';document.title=city.name+'天气 · 知天气';$('chinaSource').value=choice;$('chinaSource').disabled=!inChina(city);$('unitButton').textContent=unit==='c'?'°C':'°F';$('localTime').textContent='当地时间 '+cityClock();$('detailCity').textContent=city.name;$('temperature').textContent=temp(c?.temperature_2m);const cond=condition(c?.weather_code,c?.is_day!==0);document.body.dataset.scene=cond.scene;$('heroIcon').innerHTML=icon(cond.icon);$('conditionLine').textContent=w?`${cond.name}  ${temp(d.temperature_2m_min?.[0])}° / ${temp(d.temperature_2m_max?.[0])}°  体感 ${temp(c.apparent_temperature)}°`:'等待天气数据';$('liveState').textContent=loading?'正在更新天气…':w?`${cached?'缓存 · ':''}获取于 ${fetchedTime()} · ${pack.source.name}`:'暂未取得天气数据';$('sourceText').textContent=w?`${pack.source.name} · 通过 Open-Meteo${w.daySources.some(s=>s!==pack.source.name)?'；后续日期由综合模型补充':''}。当前天气为模型估算。`:'根据城市自动匹配地区预报源。';const a=advice();$('adviceCard').innerHTML=w?`${icon(a.icon)}<div><strong>${a.name}</strong><p>${a.text}</p></div>`:'<div><strong>等待今天的天气</strong><p>获取数据后提供出行建议。</p></div>';
+ $('hourlyStrip').innerHTML=w?hours(w,12).map(h=>`<div class="hour-item"><span>${h.time.slice(11,16)}</span>${icon(condition(h.weather_code,h.is_day!==0).icon)}<strong>${temp(h.temperature_2m)}°</strong></div>`).join(''):'<span class="skeleton" style="width:100%"></span>';
+ if(w){const values=[...d.temperature_2m_min,...d.temperature_2m_max].filter(finite),low=Math.min(...values),high=Math.max(...values),range=high-low||1;$('dailyList').innerHTML=d.time.slice(0,7).map((date,i)=>`<div class="day-row"><span>${dateShort(date)}</span><strong>${dayName(date,i)}</strong>${icon(condition(d.weather_code[i]).icon)}<span class="track">${finite(d.temperature_2m_min[i])&&finite(d.temperature_2m_max[i])?`<i style="left:${(d.temperature_2m_min[i]-low)/range*100}%;width:${Math.max(3,(d.temperature_2m_max[i]-d.temperature_2m_min[i])/range*100)}%"></i>`:''}</span><span class="range">${temp(d.temperature_2m_min[i])}° / ${temp(d.temperature_2m_max[i])}°</span></div>`).join('');}else $('dailyList').innerHTML='<span class="skeleton"></span>';
+ const hi=hours(w,1)[0],uv=d?.uv_index_max?.[0],metrics=[['sun','紫外线',fmt(uv,1),''],['thermo','体感温度',temp(c?.apparent_temperature),'°'],['drop','湿度',fmt(c?.relative_humidity_2m),'%'],['wind','风速',fmt(c?.wind_speed_10m,1),'km/h'],['pressure','气压',fmt(c?.pressure_msl),'hPa'],['eye','能见度',fmt(finite(hi?.visibility)?hi.visibility/1000:null,1),'km']];$('metrics').innerHTML=metrics.map(m=>`<button class="metric" data-open-tab="meteo">${icon(m[0])}<small>${m[1]}</small><strong>${m[2]}<em>${m[3]}</em></strong></button>`).join('');
+ const rise=d?.sunrise?.[0],set=d?.sunset?.[0],current=c?.time;let progress=0;if(rise&&set&&current)progress=Math.max(0,Math.min(1,(new Date(current)-new Date(rise))/(new Date(set)-new Date(rise))));$('sunSummary').innerHTML=`<div class="sun-labels"><span>☀ 日出</span><span>日落 ☀</span></div><div class="sun-line"><i style="left:${progress*95}%"></i></div><div class="sun-times"><span>${rise?.slice(11,16)||'—'}</span><span>${set?.slice(11,16)||'—'}</span></div>`;$('lifeSummary').innerHTML=w?life().map(a=>`<div>${icon(a.icon)}<span>${a.name}</span></div>`).join(''):'<p>等待天气数据</p>';renderAirSummary();}
+function aqiName(n){return!finite(n)?'暂无数据':n<=50?'优':n<=100?'良':n<=150?'敏感人群不健康':n<=200?'不健康':n<=300?'非常不健康':'危险';}
+function renderAirSummary(){const n=air?.current?.us_aqi;$('airSummary').innerHTML=`<span>空气质量 · 美国 AQI 标准</span><strong>${aqiName(n)} ${fmt(n)}</strong><small>${air?.cached?'上次缓存，点击查看获取时间。':finite(n)?'CAMS 模型估算，点击查看污染物详情。':'暂无空气质量数据，点击查看详情。'}</small><div class="air-bar"></div>`;}
+// A single city-management page handles adding, switching, reordering and removing.
+function openCities(){editing=false;$('editCities').textContent='管理';$('cityInput').value='';$('searchCaption').textContent='已保存的城市';$('cityResults').innerHTML='';$('managedCities').hidden=false;renderCities();$('cityPage').showModal();loadCityCards();}
+function renderCities(){$('managedCities').innerHTML=saved.map((c,i)=>{const p=readCache(c),cond=condition(p?.data?.current?.weather_code,p?.data?.current?.is_day!==0),active=cityKey(c)===cityKey(city);return `<button class="city-tile ${active?'selected':''}" data-select-city="${i}" data-scene="${cond.scene}" aria-label="切换到${esc(c.name)}"><div><h2>${esc(c.name)}${active?'<span class="current-tag">当前</span>':''}</h2><p>${esc(c.country||c.admin1||'已保存城市')}${p?' · '+esc(p.source.name):''}</p></div><div class="tile-weather"><strong>${temp(p?.data?.current?.temperature_2m)}°</strong><span>${cond.name}${p?' · '+fetchedTime(p):''}</span></div></button>${editing?`<div class="city-tools"><button data-move-city="${i}" ${i===0?'disabled':''} aria-label="将${esc(c.name)}上移">上移 ↑</button><button class="delete-city" data-delete-city="${i}" ${active?'disabled':''} aria-label="移除${esc(c.name)}">移除</button></div>`:''}`;}).join('');}
+let cityCardsRun=0;async function loadCityCards(){const run=++cityCardsRun,list=[...saved],requestedChoice=choice;let idx=0;async function worker(){while(idx<list.length&&run===cityCardsRun){const c=list[idx++],old=readCache(c);if(old&&Date.now()-new Date(old.fetchedAt)<15*60*1000)continue;try{const p=await fetchWeather(c,requestedChoice);if(run!==cityCardsRun||choice!==requestedChoice)return;putCache(c,p);if($('cityPage').open&&!$('cityInput').value)renderCities();}catch{}}}await Promise.all([worker(),worker()]);}
+$('cityInput').addEventListener('input',()=>{const q=$('cityInput').value.trim(),seq=++searchId;clearTimeout(searchTimer);searchController?.abort();$('managedCities').hidden=!!q;if(!q){$('cityResults').innerHTML='';$('searchCaption').textContent='已保存的城市';return;}const local=cities.filter(c=>(c.name+' '+c.aliases+' '+c.admin1).toLowerCase().includes(q.toLowerCase()));renderSearch(local,'搜索更多城市中…');searchTimer=setTimeout(async()=>{searchController=new AbortController();try{const u=new URL('https://geocoding-api.open-meteo.com/v1/search');u.search=new URLSearchParams({name:q,count:10,language:'zh',format:'json'});const d=await getJSON(u,searchController.signal);if(seq!==searchId)return;const all=[...local];(d.results||[]).filter(validCity).forEach(c=>{if(!all.some(x=>cityKey(x)===cityKey(c)))all.push(c)});renderSearch(all,all.length?'搜索结果':'未找到城市，试试拼音或英文名');}catch{if(seq===searchId)renderSearch(local,local.length?'本地结果 · 全球搜索暂不可用':'搜索暂不可用，请稍后重试');}},350);});
+let searchResults=[];function renderSearch(list,label){searchResults=list;$('searchCaption').textContent=label;$('cityResults').innerHTML=list.map((c,i)=>`<button class="search-result" data-search-city="${i}">${icon('pin')}<span><strong>${esc(c.name)}</strong><small>${esc([c.country,c.admin1,c.admin2].filter(Boolean).join(' · '))}</small></span><span>＋</span></button>`).join('');}
+$('clearSearch').onclick=()=>{$('cityInput').value='';$('cityInput').dispatchEvent(new Event('input'));};$('editCities').onclick=()=>{editing=!editing;$('editCities').textContent=editing?'完成':'管理';renderCities();};$('cityPage').addEventListener('close',()=>{searchId++;clearTimeout(searchTimer);searchController?.abort();cityCardsRun++;});
+$('locate').onclick=()=>{if(!navigator.geolocation){toast('设备暂不支持定位，请搜索城市');return}$('locate').disabled=true;navigator.geolocation.getCurrentPosition(p=>{$('locate').disabled=false;selectCity({name:'当前位置',latitude:p.coords.latitude,longitude:p.coords.longitude,country:'',country_code:'',admin1:'定位城市',timezone:Intl.DateTimeFormat().resolvedOptions().timeZone});},e=>{$('locate').disabled=false;toast(e.code===1?'未获得定位权限，可以搜索城市':'暂时无法定位，请搜索城市');},{enableHighAccuracy:false,timeout:10000,maximumAge:300000});};
+const tabs=[['live','实况'],['hourly','逐小时'],['daily','15日'],['air','空气质量'],['meteo','气象信息'],['sun','日出日落'],['life','生活指数'],['map','天气地图'],['typhoon','台风预警'],['compare','双城对比'],['alerts','天气预警']];
+function openDetails(tab='live'){activeTab=tab;$('detailCity').textContent=city.name;$('detailsPage').showModal();renderTabs();renderDetail();}
+function renderTabs(){$('detailTabs').innerHTML=tabs.map(([id,name])=>`<button role="tab" id="tab-${id}" aria-selected="${id===activeTab}" aria-controls="detailContent" data-tab="${id}">${name}</button>`).join('');$('detailContent').setAttribute('aria-labelledby','tab-'+activeTab);$('detailTabs').querySelector('[aria-selected=true]')?.scrollIntoView({block:'nearest',inline:'center'});}
+function destroyMaps(){if(map){map.remove();map=null}if(stormMap){stormMap.remove();stormMap=null}clearInterval(radarTimer);radarTimer=null;radarLayer=null;coverageLayer=null;}
+function changeTab(tab){destroyMaps();activeTab=tab;renderTabs();renderDetail();$('detailsPage').scrollTop=0;}
+function missing(){return '<div class="empty-state"><strong>暂未取得天气</strong>返回首页刷新后再试。</div>';}
+function panel(title,body,note=''){return `<section class="detail-panel"><h2>${title}</h2>${body}${note?`<p class="detail-muted">${note}</p>`:''}</section>`;}
+function detailSource(){return `来源：${esc(pack?.source.name||'—')} · 通过 Open-Meteo${cached?' · 缓存':''} · 获取于 ${fetchedTime()}`;}
+function stat(label,value,suffix=''){return `<div><small>${label}</small><strong>${value} <em>${suffix}</em></strong></div>`;}
+function renderDetail(){const w=pack?.data,c=w?.current,d=w?.daily,out=$('detailContent');if(activeTab==='map'){renderMap();return}if(activeTab==='typhoon'){renderTyphoons();return}if(activeTab==='alerts'){renderAlerts();return}if(activeTab==='compare'){renderCompare();return}if(activeTab==='air'){renderAir();return}if(!w){out.innerHTML=missing();return}
+ if(activeTab==='live'){out.innerHTML=panel(city.name+' · '+condition(c.weather_code,c.is_day!==0).name,`<div class="big-live">${icon(condition(c.weather_code,c.is_day!==0).icon)}<strong>${temp(c.temperature_2m)}°</strong></div><div class="stat-grid">${stat('今日低温',temp(d.temperature_2m_min[0]),'°')}${stat('今日高温',temp(d.temperature_2m_max[0]),'°')}${stat('体感温度',temp(c.apparent_temperature),'°')}${stat('相对湿度',fmt(c.relative_humidity_2m),'%')}${stat('风速',fmt(c.wind_speed_10m,1),'km/h')}${stat('气压',fmt(c.pressure_msl),'hPa')}</div>`,detailSource()+'。当前天气是模型估算，非气象站实测。');}
+ if(activeTab==='daily'){out.innerHTML=panel('未来 15 天天气',d.time.slice(0,15).map((date,i)=>`<div class="detail-day"><div>${dayName(date,i)}<small>${dateShort(date)}</small></div>${icon(condition(d.weather_code[i]).icon)}<div>${condition(d.weather_code[i]).name}<small>${esc(w.daySources[i])}</small><div class="probability">降水概率 ${fmt(d.precipitation_probability_max?.[i])}% · ${fmt(d.precipitation_sum?.[i],1)} mm</div></div><strong>${temp(d.temperature_2m_min[i])}° / ${temp(d.temperature_2m_max[i])}°</strong></div>`).join(''),'每行标明温度和天气来源；降水概率等缺失指标由综合模型补充，仍缺失时显示 —。远期预报不确定性较大，建议临近日期再次查看。'+detailSource());}
+ if(activeTab==='hourly'){const h=hours(w,48);out.innerHTML=panel('未来 48 小时',lineChart([h.map(x=>({x:x.time,y:finite(x.temperature_2m)?tempValue(x.temperature_2m):null}))],['#559bdd'])+`<table class="hour-table"><thead><tr><th>时间</th><th>天气 / 温度</th><th>降水概率</th><th>降水量</th></tr></thead><tbody>${h.map(x=>`<tr><td>${Number(x.time.slice(5,7))}/${Number(x.time.slice(8,10))}<br>${x.time.slice(11,16)}</td><td>${icon(condition(x.weather_code,x.is_day!==0).icon)}${temp(x.temperature_2m)}°</td><td>${fmt(x.precipitation_probability)}%</td><td>${fmt(x.precipitation,1)} mm</td></tr>`).join('')}</tbody></table>`,detailSource()+(w.supplemented.some(x=>x.startsWith('hourly:'))?'；缺失的小时指标由综合模型补充。':''));}
+ if(activeTab==='meteo'){const h=hours(w,1)[0];out.innerHTML=panel('气象信息',`<div class="stat-grid">${stat('体感温度',temp(c.apparent_temperature),'°')}${stat('相对湿度',fmt(c.relative_humidity_2m),'%')}${stat('海平面气压',fmt(c.pressure_msl),'hPa')}${stat('风速',fmt(c.wind_speed_10m,1),'km/h')}${stat('风向',windName(c.wind_direction_10m))}${stat('阵风',fmt(c.wind_gusts_10m,1),'km/h')}${stat('能见度',fmt(finite(h?.visibility)?h.visibility/1000:null,1),'km')}${stat('云量',fmt(c.cloud_cover),'%')}${stat('当前降水',fmt(c.precipitation,1),'mm')}${stat('紫外线最高',fmt(d.uv_index_max?.[0],1))}${stat('今日降水',fmt(d.precipitation_sum?.[0],1),'mm')}${stat('今日最大风速',fmt(d.wind_speed_10m_max?.[0],1),'km/h')}</div>`,detailSource()+(w.supplemented.length?'；紫外线、能见度等缺失指标可由综合模型补充。':''));}
+ if(activeTab==='sun'){const rise=d.sunrise[0],set=d.sunset[0],daylight=rise&&set?Math.max(0,(new Date(set)-new Date(rise))/3600000):null;out.innerHTML=panel('日出日落',`<svg class="sun-arc" viewBox="0 0 350 140" aria-label="日出日落示意图"><path d="M10 115 Q175 -60 340 115" fill="none" stroke="#89b8e9" stroke-width="3"/><path d="M10 115H340" stroke="#829db433"/><circle cx="175" cy="28" r="15" fill="#f1c852"/></svg><div class="stat-grid">${stat('今日日出',rise?.slice(11,16)||'—')}${stat('今日日落',set?.slice(11,16)||'—')}${stat('白昼时长',fmt(daylight,1),'小时')}</div><h3>未来日期</h3>${d.time.map((date,i)=>`<div class="detail-day"><div>${dayName(date,i)}<small>${dateShort(date)}</small></div>${icon('sun')}<span>日出 ${d.sunrise?.[i]?.slice(11,16)||'—'}</span><span>日落 ${d.sunset?.[i]?.slice(11,16)||'—'}</span></div>`).join('')}`,'当地时间；日出日落按城市经纬度计算。');}
+ if(activeTab==='life')out.innerHTML=panel('生活建议',life(w).map(a=>`<div class="life-detail">${icon(a.icon)}<div><strong>${a.name}</strong><p>${a.text}</p></div></div>`).join(''),'根据天气计算的参考建议，并非官方生活指数。');
 }
-mediaTheme.addEventListener('change',()=>{if(theme==='auto')applyTheme('auto');});
-document.querySelectorAll('.theme-control button').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.theme)));
-$('quickTheme').addEventListener('click',()=>applyTheme(document.documentElement.dataset.theme==='light'?'dark':'light'));
-function applyUnit(value) {
-  unit=value;storage.set('weatherly-unit',unit);
-  document.querySelectorAll('[data-unit]').forEach(b=>{b.classList.toggle('selected',b.dataset.unit===unit);b.setAttribute('aria-pressed',b.dataset.unit===unit);});
-  renderWeather();syncNative();
-}
-document.querySelectorAll('[data-unit]').forEach(b=>b.addEventListener('click',()=>applyUnit(b.dataset.unit)));
-document.querySelectorAll('[data-chart]').forEach(b=>b.addEventListener('click',()=>{chartMode=b.dataset.chart;document.querySelectorAll('[data-chart]').forEach(el=>{el.classList.toggle('selected',el===b);el.setAttribute('aria-pressed',el===b);});renderHourly();}));
-function toast(message) {clearTimeout(toastTimer);$('toast').textContent=message;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,4000);}
-function notice(message='') {$('notice').textContent=message;$('notice').hidden=!message;}
-function renderCity() {
-  $('cityName').textContent=selectedCity.name;
-  $('crumbCity').textContent=selectedCity.name;
-  $('cityRegion').textContent=[selectedCity.country,selectedCity.admin1].filter(Boolean).join(' · ') || '当前位置';
-  document.title=`${selectedCity.name}天气 · 知天气`;
-  renderClock();renderSaved();
-  $('chinaSource').value=chinaSource;$('chinaSource').disabled=!inChina(selectedCity);
-  $('chinaSourceNote').textContent=inChina(selectedCity)?'CMA 通过 Open-Meteo 获取；不可用时自动切换备用源。':'当前为海外城市，自动匹配所在地区的数据源。中国地区的选择已保留。';
-  document.querySelector('.source-heading').innerHTML=inChina(selectedCity)&&chinaSource!=='auto'?'你为中国城市选择的数据源 <span class="auto-tag">手动</span>':'为这座城市，自动匹配数据源 <span class="auto-tag">自动</span>';
-  syncNative();
-}
-function renderClock() {
-  const timeZone=weather?.timezone || selectedCity.timezone || 'Asia/Shanghai';
-  try {
-    $('dateText').textContent=new Intl.DateTimeFormat('zh-CN',{timeZone,month:'long',day:'numeric',weekday:'long'}).format(new Date())+' · 愿今天，有好天气';
-    $('localTime').textContent='当地时间 '+new Intl.DateTimeFormat('zh-CN',{timeZone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
-  } catch { $('dateText').textContent='城市天气';$('localTime').textContent='当地时间 —'; }
-}
-function renderSaved() {
-  $('savedCities').replaceChildren();
-  savedCities.forEach(city=>{
-    const b=document.createElement('button');b.className='saved-city'+(cityKey(city)===cityKey(selectedCity)?' selected':'');
-    b.setAttribute('aria-pressed',cityKey(city)===cityKey(selectedCity));
-    b.innerHTML=`<span class="city-small">${icon('pin')} ${escapeHTML(city.name)}</span><span class="city-country">${escapeHTML(city.country_code||'')}</span>`;
-    b.addEventListener('click',()=>selectCity(city));$('savedCities').append(b);
-  });
-}
-function selectCity(city) {
-  selectedCity=city;storage.set('weatherly-city',city);
-  if(!savedCities.some(c=>cityKey(c)===cityKey(city))) {savedCities=[...savedCities,city].slice(-6);storage.set('weatherly-saved',savedCities);}
-  weather=null;activeSource=null;fetchedAt=null;
-  $('cityDialog').close();renderCity();renderWeather();loadWeather();
-}
-async function getJSON(url, signal) {
-  const response=await fetch(url,{signal});
-  if(!response.ok)throw new Error(`HTTP ${response.status}`);
-  const data=await response.json();
-  if(data.error)throw new Error(data.reason||'接口不可用');
-  return data;
-}
-function weatherURL(city,source) {
-  const url=new URL('https://api.open-meteo.com/v1/'+(source.model==='cma'?'cma':'forecast'));
-  url.search=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,timezone:'auto',forecast_days:7,...(source.model==='cma'?{}:{models:source.model}),
-    current:'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m',
-    hourly:'temperature_2m,precipitation_probability,precipitation,weather_code,is_day,visibility',
-    daily:'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset'});
-  return url.toString();
-}
-function usableWeather(data) {
-  return finite(data?.current?.temperature_2m)&&Array.isArray(data?.daily?.time)&&data.daily.time.length>=7&&data?.hourly?.temperature_2m?.some(finite);
-}
-async function supplementDetails(data,city,signal) {
-  const needsUV=!finite(data.daily.uv_index_max?.[0]), needsVisibility=!data.hourly.visibility?.some(finite);
-  if(!needsUV&&!needsVisibility)return;
-  const url=new URL('https://api.open-meteo.com/v1/forecast');
-  url.search=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,timezone:'auto',forecast_days:7,models:'best_match',daily:'uv_index_max',hourly:'visibility'});
-  try {
-    const extra=await getJSON(url,AbortSignal.any([signal,AbortSignal.timeout(6500)]));
-    data.supplemented=[];
-    if(needsUV&&extra.daily?.uv_index_max?.some(finite)) {
-      data.daily.uv_index_max=data.daily.time.map(time=>extra.daily.uv_index_max[extra.daily.time.indexOf(time)]??null);data.supplemented.push('uv');
-    }
-    if(needsVisibility&&extra.hourly?.visibility?.some(finite)) {
-      data.hourly.visibility=data.hourly.time.map(time=>extra.hourly.visibility[extra.hourly.time.indexOf(time)]??null);data.supplemented.push('visibility');
-    }
-  } catch { /* Optional indicators may remain unavailable without losing the forecast. */ }
-}
-async function loadWeather() {
-  const sequence=++requestSequence, city=selectedCity, preferred=sourceFor(city);
-  weatherController?.abort();const controller=new AbortController();weatherController=controller;
-  loading=true;document.body.classList.add('loading-data');$('refresh').classList.add('loading');$('refresh').disabled=true;notice();
-  $('liveState').innerHTML='<i></i> 正在更新';
-  if(!weather) {$('sourceText').textContent=`${preferred.name} · 正在获取 ${city.name} 的预报`;renderEmpty();}
-  const timer=setTimeout(()=>controller.abort('timeout'),26000);
-  let data, source=preferred, fallback=false;
-  try {
-    try { data=await getJSON(weatherURL(city,preferred),AbortSignal.any([controller.signal,AbortSignal.timeout(12000)]));if(!usableWeather(data))throw new Error('地区源预报不完整'); }
-    catch(error) {if(controller.signal.aborted)throw error;source=sources.FALLBACK;fallback=true;data=await getJSON(weatherURL(city,source),controller.signal);if(!usableWeather(data))throw new Error('预报数据不完整');}
-    if(sequence!==requestSequence)return;
-    weather=data;activeSource=source;fetchedAt=new Date();
-    storage.set('weatherly-cache-'+cityKey(city),{weather:data,source,fetchedAt:fetchedAt.toISOString()});
-    $('liveState').innerHTML='<i></i> 最新预报';
-    if(fallback)notice(`${preferred.name} 暂不可用，已自动切换到 Open-Meteo 备用源。`);
-    renderWeather();
-    await supplementDetails(data,city,controller.signal);
-    if(sequence!==requestSequence)return;
-    storage.set('weatherly-cache-'+cityKey(city),{weather:data,source,fetchedAt:fetchedAt.toISOString()});
-    renderWeather();
-  } catch(error) {
-    if(sequence!==requestSequence)return;
-    const cache=storage.get('weatherly-cache-'+cityKey(city),null);
-    if(cache&&usableWeather(cache.weather)&&Date.now()-new Date(cache.fetchedAt).getTime()<6*3600000) {
-      weather=cache.weather;activeSource=cache.source;fetchedAt=new Date(cache.fetchedAt);renderWeather();
-      $('liveState').innerHTML='<i></i> 缓存预报';notice('暂时无法连接天气服务，正在显示上次保存的数据。请稍后刷新。');
-    } else if(weather) {$('liveState').innerHTML='<i></i> 更新失败';notice('天气更新失败，保留上次预报。请检查网络后重试。');}
-    else {$('liveState').innerHTML='<i></i> 连接失败';$('condition').textContent='暂时无法获取天气';$('sourceText').textContent='数据源连接失败 · 请检查网络后刷新';notice('暂时无法连接天气服务，请检查网络，或稍后点击「刷新天气」。');}
-  } finally {
-    clearTimeout(timer);if(sequence===requestSequence){loading=false;document.body.classList.remove('loading-data');$('refresh').classList.remove('loading');$('refresh').disabled=false;syncNative();}
-  }
-}
-function renderEmpty() {
-  $('temperature').innerHTML='—<span>°</span>';$('condition').textContent='正在获取天气';$('feels').innerHTML='体感 —° <span>·</span> 最高 —° / 最低 —°';
-  $('weatherNote').textContent='天气与美好，都会如期而至。';$('updatedAt').textContent='尚未更新';
-  document.querySelector('.current-card').classList.remove('night','rainy');
-  $('dailyForecast').innerHTML=Array.from({length:7},(_,i)=>`<div class="day-row"><span class="day">${i===0?'今天':i===1?'明天':'—'}</span>${icon('cloud','cloudy')}<span class="day-low">—°</span><span class="temp-track"></span><span class="day-high">—°</span></div>`).join('');
-  $('chart').innerHTML='<div class="chart-empty">等待天气数据…</div>';$('hourlyForecast').replaceChildren();
-  $('windValue').innerHTML='— <small>km/h</small>';$('humidityValue').innerHTML='—<small>%</small>';$('uvValue').textContent='—';$('visibilityValue').innerHTML='— <small>km</small>';
-  ['windNote','humidityNote','uvNote','visibilityNote'].forEach(id=>$(id).textContent='—');$('humidityMeter').style.width='0';$('uvMarker').style.left='0';
-}
-function renderWeather() {
-  if(!weather){renderEmpty();return;}
-  const c=weather.current,d=weather.daily,cond=condition(c.weather_code,c.is_day!==0);
-  $('temperature').innerHTML=`${temp(c.temperature_2m)}<span>°</span>`;$('condition').textContent=cond.name;
-  $('feels').innerHTML=`体感 ${temp(c.apparent_temperature)}° <span>·</span> 最高 ${temp(d.temperature_2m_max?.[0])}° / 最低 ${temp(d.temperature_2m_min?.[0])}°`;
-  document.querySelector('.current-card').classList.toggle('night',c.is_day===0);
-  document.querySelector('.current-card').classList.toggle('rainy',cond.cls==='wet');
-  $('weatherNote').textContent=cond.icon==='rain'?'雨天出发，记得带一把伞。':cond.icon==='snow'?'雪天路滑，给出行多留一点时间。':c.temperature_2m>30?'阳光热烈，记得补水与防晒。':c.temperature_2m<10?'天凉了，出门添一件外套。':c.is_day===0?'夜色渐深，愿你有一个好梦。':'把好天气，装进今天的计划。';
-  renderClock();renderDaily();renderHourly();renderDetails();
-  syncNative();
-  $('sourceText').textContent=`${activeSource?.name||'Open-Meteo'} · ${activeSource?.detail||''}${weather.supplemented?.length?' · 详情由 Best Match 补充':''} · Open-Meteo`;
-  if(fetchedAt) $('updatedAt').textContent='获取于 '+new Intl.DateTimeFormat('zh-CN',{timeZone:weather.timezone||'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(fetchedAt)+'（当地）';
-}
-function renderDaily() {
-  const d=weather.daily;
-  const all=[...d.temperature_2m_min,...d.temperature_2m_max].filter(finite),min=Math.min(...all),max=Math.max(...all),range=max-min||1;
-  $('dailyForecast').innerHTML=d.time.slice(0,7).map((date,i)=>{
-    const cond=condition(d.weather_code?.[i]),low=d.temperature_2m_min?.[i],high=d.temperature_2m_max?.[i];
-    const day=i===0?'今天':i===1?'明天':new Intl.DateTimeFormat('zh-CN',{weekday:'short',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));
-    const bar=finite(low)&&finite(high)?`<span class="temp-bar" style="left:${(low-min)/range*100}%;width:${Math.max(2,(high-low)/range*100)}%"></span>`:'';
-    return `<div class="day-row" title="${escapeHTML(date+' '+cond.name)}"><span class="day">${day}</span>${icon(cond.icon,cond.cls)}<span class="day-low">${temp(low)}°</span><span class="temp-track">${bar}</span><span class="day-high">${temp(high)}°</span></div>`;
-  }).join('');
-}
-function nextHours() {
-  if(!weather)return [];
-  const h=weather.hourly,now=weather.current.time;
-  let start=h.time.findIndex(t=>t>=now);if(start<0)start=0;
-  return h.time.slice(start,start+24).map((time,i)=>({time,temp:h.temperature_2m?.[start+i],rain:h.precipitation?.[start+i],probability:h.precipitation_probability?.[start+i],code:h.weather_code?.[start+i],day:h.is_day?.[start+i]}));
-}
-function renderHourly() {
-  if(!weather){$('chart').innerHTML='<div class="chart-empty">等待天气数据…</div>';return;}
-  const hours=nextHours(),values=hours.map(h=>chartMode==='temperature'?(finite(h.temp)?tempValue(h.temp):null):h.rain),available=values.filter(finite);
-  const label=chartMode==='temperature'?`温度 (${unit==='c'?'°C':'°F'})`:'降水量 (mm)';
-  $('chart').setAttribute('aria-label','接下来24小时'+label+'趋势');
-  if(!available.length){$('chart').innerHTML='<div class="chart-empty">此数据源暂无该项小时数据</div>';return;}
-  const min=chartMode==='rain'?0:Math.floor(Math.min(...available)-2),max=chartMode==='rain'?Math.max(1,Math.ceil(Math.max(...available))):Math.ceil(Math.max(...available)+2),range=max-min||1;
-  const W=650,H=140,L=32,R=12,T=18,B=21,cw=W-L-R,ch=H-T-B;
-  const x=i=>L+i/Math.max(1,hours.length-1)*cw, y=v=>T+(max-v)/range*ch;
-  const points=values.map((v,i)=>finite(v)?{x:x(i),y:y(v),value:v,i}:null);
-  // Break the path at missing hours instead of drawing fabricated values.
-  let line='',area='',segment=[];
-  function closeSegment(){if(!segment.length)return;const path=segment.map((p,i)=>`${i?'L':'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');line+=path+' ';area+=`${path} L${segment.at(-1).x},${H-B} L${segment[0].x},${H-B} Z `;segment=[];}
-  points.forEach(p=>{if(p)segment.push(p);else closeSegment();});closeSegment();
-  const grid=Array.from({length:3},(_,i)=>{const value=min+range*(2-i)/2,pos=y(value);return `<line x1="${L}" x2="${W-R}" y1="${pos}" y2="${pos}" stroke="var(--line)" stroke-dasharray="3 5"/><text x="0" y="${pos+3}" fill="var(--muted)" font-size="9">${chartMode==='rain'?value.toFixed(1):Math.round(value)}${chartMode==='rain'?'':'°'}</text>`;}).join('');
-  const highlights=points.filter((p,i)=>p&&i%3===0).map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="var(--panel)" stroke="var(--chart-line)" stroke-width="1.7"><title>${hours[p.i].time.replace('T',' ')} · ${p.value.toFixed(chartMode==='rain'?1:0)}${chartMode==='rain'?' mm':'°'}</title></circle>`).join('');
-  const labels=hours.filter((h,i)=>i%6===0||i===hours.length-1).map(h=>{const i=hours.indexOf(h);return `<text x="${x(i)}" y="${H-2}" text-anchor="middle" fill="var(--muted)" font-size="9">${h.time.slice(11,16)}</text>`;}).join('');
-  $('chart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"><title>${label}，未来24小时</title>${grid}<path d="${area}" fill="var(--chart-fill)" opacity=".6"/><path d="${line}" fill="none" stroke="var(--chart-line)" stroke-width="2.2" stroke-linejoin="round"/>${highlights}${labels}</svg>`;
-  $('hourlyForecast').innerHTML=hours.filter((h,i)=>i%3===0).slice(0,8).map(h=>{const cond=condition(h.code,h.day!==0);return `<div class="hour-item"><span>${h.time.slice(11,16)}</span>${icon(cond.icon,cond.cls)}<strong>${chartMode==='temperature'?`${temp(h.temp)}°`:`${fmt(h.rain,1)} mm`}</strong></div>`;}).join('');
-}
-function renderDetails() {
-  const c=weather.current,h=nextHours()[0],uv=weather.daily.uv_index_max?.[0];
-  const direction=finite(c.wind_direction_10m)?['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(c.wind_direction_10m/45)%8]:'风向暂无数据';
-  $('windValue').innerHTML=`${fmt(c.wind_speed_10m,1)} <small>km/h</small>`;$('windNote').textContent=direction;
-  $('humidityValue').innerHTML=`${fmt(c.relative_humidity_2m)}<small>%</small>`;$('humidityNote').textContent=!finite(c.relative_humidity_2m)?'此数据源暂无数据':c.relative_humidity_2m>70?'空气较湿润':c.relative_humidity_2m<30?'空气较干燥':'空气湿度适中';
-  $('humidityMeter').style.width=`${Math.min(100,Math.max(0,c.relative_humidity_2m||0))}%`;
-  $('uvValue').textContent=fmt(uv,1);$('uvNote').textContent=!finite(uv)?'此数据源暂无数据':uv<3?'今日最高 · 低':uv<6?'今日最高 · 中等':uv<8?'今日最高 · 高':uv<11?'今日最高 · 很高':'今日最高 · 极高';$('uvMarker').style.left=`${Math.min(98,(uv||0)/12*100)}%`;
-  const hourIndex=weather.hourly.time.indexOf(h?.time),visibility=weather.hourly.visibility?.[hourIndex];
-  $('visibilityValue').innerHTML=`${finite(visibility)?fmt(visibility/1000,1):'—'} <small>km</small>`;$('visibilityNote').textContent=!finite(visibility)?'此数据源暂无数据':visibility>=10000?'视野开阔':visibility>=5000?'能见度良好':'出行请留意路况';
-  if(weather.supplemented?.includes('uv'))$('uvNote').textContent+=' · 综合模型';
-  if(weather.supplemented?.includes('visibility'))$('visibilityNote').textContent+=' · 综合模型';
-}
-function openCityDialog() {$('cityInput').value='';renderCityResults(cities.slice(0,6),'热门城市');$('cityDialog').showModal();setTimeout(()=>$('cityInput').focus(),50);}
-['searchCity','changeCity','addCity'].forEach(id=>$(id).addEventListener('click',openCityDialog));
-document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
-document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d){const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)d.close();}}));
-document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(!$('cityDialog').open)openCityDialog();}});
-function renderCityResults(results,caption) {
-  $('searchCaption').textContent=caption;$('cityResults').replaceChildren();
-  if(!results.length){const p=document.createElement('p');p.className='dialog-tip';p.textContent='没有找到这座城市，试试英文名或拼音。';$('cityResults').append(p);return;}
-  results.forEach(city=>{
-    const b=document.createElement('button');b.className='city-result';
-    b.innerHTML=`${icon('pin')}<span><strong>${escapeHTML(city.name)}</strong><small>${escapeHTML([city.country,city.admin1].filter(Boolean).join(' · '))}</small></span><span class="result-source">${sourceFor(city).name}</span>`;
-    b.addEventListener('click',()=>selectCity(city));$('cityResults').append(b);
-  });
-}
-$('cityInput').addEventListener('input',()=>{
-  const query=$('cityInput').value.trim(),sequence=++searchSequence;clearTimeout(searchTimer);searchController?.abort();
-  if(!query){renderCityResults(cities.slice(0,6),'热门城市');return;}
-  const local=cities.filter(c=>(c.name+' '+c.aliases).toLowerCase().includes(query.toLowerCase()));
-  renderCityResults(local,local.length?'匹配城市 · 正在搜索更多…':'正在搜索全球城市…');
-  searchTimer=setTimeout(async()=>{
-    searchController=new AbortController();
-    try {
-      const url=new URL('https://geocoding-api.open-meteo.com/v1/search');url.search=new URLSearchParams({name:query,count:10,language:'zh',format:'json'});
-      const data=await getJSON(url,AbortSignal.any([searchController.signal,AbortSignal.timeout(9000)]));if(sequence!==searchSequence)return;
-      const merged=[...local];(data.results||[]).filter(validCity).forEach(c=>{if(!merged.some(m=>cityKey(m)===cityKey(c)))merged.push(c);});renderCityResults(merged,'搜索结果');
-    } catch(error) {if(sequence!==searchSequence)return;renderCityResults(local,local.length?'本地匹配 · 全球搜索暂不可用':'全球搜索暂不可用，请稍后重试');}
-  },350);
-});
-$('cityDialog').addEventListener('close',()=>{searchSequence++;clearTimeout(searchTimer);searchController?.abort();});
-$('sourceInfo').addEventListener('click',()=>{$('sourceCurrent').textContent=`${selectedCity.name} · 当前来源：${activeSource?.name || sourceFor(selectedCity).name}${!weather?'（尚未取得数据）':''}${weather?.supplemented?.length?'；部分详情来自 Best Match 综合模型':''}`;$('sourceDialog').showModal();});
-$('refresh').addEventListener('click',loadWeather);
-$('chinaSource').value=chinaSource;
-$('chinaSource').addEventListener('change',()=>{chinaSource=$('chinaSource').value;storage.set('weatherly-china-source',chinaSource);weather=null;activeSource=null;fetchedAt=null;renderCity();renderWeather();loadWeather();});
-$('locate').addEventListener('click',()=>{
-  if(!navigator.geolocation){toast('浏览器暂不支持定位，请搜索城市。');return;}
-  $('locate').disabled=true;
-  navigator.geolocation.getCurrentPosition(position=>{
-    $('locate').disabled=false;selectCity({name:'当前位置',latitude:position.coords.latitude,longitude:position.coords.longitude,country:'',country_code:'',admin1:`${position.coords.latitude.toFixed(2)}°, ${position.coords.longitude.toFixed(2)}°`,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone});toast('已根据你的位置获取天气');
-  },error=>{$('locate').disabled=false;toast(error.code===1?'未获得定位权限，你可以直接搜索城市。':'暂时无法定位，请搜索城市。');},{enableHighAccuracy:false,timeout:10000,maximumAge:300000});
-});
-document.querySelectorAll('.nav-link').forEach(a=>a.addEventListener('click',()=>{document.querySelectorAll('.nav-link').forEach(el=>el.classList.toggle('active',el===a));}));
-applyTheme(theme);applyUnit(unit);renderCity();loadWeather();
-setInterval(renderClock,60000);
-setInterval(()=>{if(document.visibilityState==='visible'&&!loading)loadWeather();},15*60*1000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!loading&&fetchedAt&&Date.now()-fetchedAt.getTime()>15*60*1000)loadWeather();});
+function windName(n){return finite(n)?['北风','东北风','东风','东南风','南风','西南风','西风','西北风'][Math.round(n/45)%8]:'—';}
+function lineChart(series,colors){const all=series.flatMap(s=>s.map(p=>p.y)).filter(finite);if(!all.length)return'<p class="detail-muted">暂无趋势数据</p>';const lo=Math.floor(Math.min(...all)-2),hi=Math.ceil(Math.max(...all)+2),count=Math.max(...series.map(s=>s.length)),x=i=>35+i/Math.max(1,count-1)*565,y=v=>18+(hi-v)/(hi-lo||1)*145;const grid=[0,1,2,3].map(i=>{const v=lo+(hi-lo)*i/3;return `<path d="M35 ${y(v)}H605" stroke="var(--line)"/><text x="0" y="${y(v)+3}">${Math.round(v)}°</text>`}).join('');const lines=series.map((s,k)=>{let drawing=false,path='';s.forEach((p,i)=>{if(!finite(p.y)){drawing=false;return;}path+=`${drawing?'L':'M'}${x(i)},${y(p.y)} `;drawing=true;});return `<path d="${path}" fill="none" stroke="${colors[k]}" stroke-width="3" stroke-linejoin="round"/>`;}).join('');const labels=[0,Math.floor((count-1)/2),count-1].map(i=>`<text x="${x(i)}" y="190" text-anchor="middle">${esc((series[0]?.[i]?.x||'').replace('T',' ').slice(5,16))}</text>`).join('');return `<svg class="chart-svg" viewBox="0 0 620 200" role="img" aria-label="温度趋势，缺失数据留空">${grid}${lines}${labels}</svg>`;}
+function renderAir(){if(!air){$('detailContent').innerHTML=panel('空气质量','<div class="empty-state"><strong>暂未取得空气质量数据</strong>可点击右上角刷新重试。</div>','来源：CAMS / Open-Meteo；美国 AQI 标准。');return;}const c=air.current,n=c?.us_aqi;$('detailContent').innerHTML=panel('空气质量 · 美国 AQI',`<div class="air-index">${fmt(n)}<span>${aqiName(n)}</span></div><div class="air-scale"></div><div class="stat-grid">${stat('PM2.5',fmt(c?.pm2_5,1),'μg/m³')}${stat('PM10',fmt(c?.pm10,1),'μg/m³')}${stat('臭氧 O₃',fmt(c?.ozone,1),'μg/m³')}${stat('二氧化氮',fmt(c?.nitrogen_dioxide,1),'μg/m³')}${stat('二氧化硫',fmt(c?.sulphur_dioxide,1),'μg/m³')}${stat('一氧化碳',fmt(c?.carbon_monoxide),'μg/m³')}</div>`,`CAMS 模型估算 · 通过 Open-Meteo；采用美国 AQI 标准，与中国国标数值可能不同。${air.cached?' 当前为缓存。':''} 获取时间：${esc(air.fetchedAt.replace('T',' ').slice(0,16))} UTC。`);}
+
+function createMap(id,center,zoom){if(!window.L)throw new Error('地图组件未能加载');const m=L.map(id,{zoomControl:true,attributionControl:true}).setView(center,zoom);const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(m);let failed=0;tiles.on('tileerror',()=>{if(++failed===3){const box=$(id);if(box&&!box.querySelector('.map-error-overlay')){const message=document.createElement('div');message.className='map-error-overlay';message.textContent='部分底图未能加载，请检查网络。';box.append(message);}}});return m;}
+async function renderMap(){destroyMaps();$('detailContent').innerHTML=panel('降水雷达',`<p class="detail-muted">${esc(city.name)} · 可缩放、拖动地图，拖动时间轴查看过去约 2 小时回波。</p><div id="weatherMap" class="map-box" aria-label="降水雷达互动地图"></div><div id="radarStatus" class="map-status">正在加载雷达资料…</div><div class="radar-controls"><button class="small-button" id="radarPlay" disabled>播放</button><input id="radarRange" type="range" min="0" max="0" value="0" aria-label="雷达时间" disabled><span id="radarTime">—</span></div><div class="select-row"><button id="coverageButton" class="small-button" aria-pressed="true">覆盖遮罩：开</button><button id="mapCenter" class="small-button">回到城市</button></div><p class="map-caption">底图 © OpenStreetMap · 回波 RainViewer<br>黑色遮罩表示无雷达覆盖。未显示回波不能单独作为无雨判断。雷达回波不是未来降雨预报。</p>`);const target=city;try{map=createMap('weatherMap',[target.latitude,target.longitude],6);L.circleMarker([target.latitude,target.longitude],{radius:6,color:'#fff',weight:2,fillColor:'#3e83e5',fillOpacity:1}).addTo(map).bindPopup(`${esc(target.name)} · ${temp(pack?.data?.current?.temperature_2m)}°`);$('mapCenter').onclick=()=>map?.setView([target.latitude,target.longitude],6);const d=await getJSON('https://api.rainviewer.com/public/weather-maps.json');if(activeTab!=='map'||!map||!$('detailsPage').open)return;if(d.host!=='https://tilecache.rainviewer.com')throw new Error('雷达来源不正确');radarFrames=(d.radar?.past||[]).filter(f=>/^\/v2\/radar\/[a-zA-Z0-9]+$/.test(f.path)&&finite(f.time));if(!radarFrames.length)throw new Error('暂无雷达资料');coverageLayer=L.tileLayer(d.host+'/v2/coverage/0/256/{z}/{x}/{y}/0/0_0.png',{opacity:.25,maxNativeZoom:7,maxZoom:18}).addTo(map);$('coverageButton').onclick=()=>{if(!map||!coverageLayer)return;const enabled=map.hasLayer(coverageLayer);if(enabled)map.removeLayer(coverageLayer);else coverageLayer.addTo(map);$('coverageButton').textContent='覆盖遮罩：'+(enabled?'关':'开');$('coverageButton').setAttribute('aria-pressed',String(!enabled));};$('radarRange').max=String(radarFrames.length-1);$('radarRange').value=String(radarFrames.length-1);$('radarRange').disabled=false;$('radarPlay').disabled=false;const show=i=>{const f=radarFrames[i];if(!f||!map)return;if(radarLayer)map.removeLayer(radarLayer);radarLayer=L.tileLayer(d.host+f.path+'/256/{z}/{x}/{y}/2/1_1.png',{opacity:.7,maxNativeZoom:7,maxZoom:18}).addTo(map);radarLayer.on('tileerror',()=>{if($('radarStatus'))$('radarStatus').textContent='部分雷达瓦片未能加载，请稍后重试。'});$('radarTime').textContent=new Intl.DateTimeFormat('zh-CN',{timeZone:pack?.data?.timezone||target.timezone||'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(f.time*1000));};show(radarFrames.length-1);$('radarStatus').textContent=`已加载 ${radarFrames.length} 帧。雷达覆盖因地区而异。`;$('radarRange').oninput=()=>show(Number($('radarRange').value));$('radarPlay').onclick=()=>{if(radarTimer){clearInterval(radarTimer);radarTimer=null;$('radarPlay').textContent='播放'}else{$('radarPlay').textContent='暂停';radarTimer=setInterval(()=>{const i=(Number($('radarRange').value)+1)%radarFrames.length;$('radarRange').value=String(i);show(i);},1000);}};}catch(e){if(activeTab==='map'&&$('radarStatus'))$('radarStatus').textContent='雷达资料暂不可用；底图可用时仍可查看城市位置。';}}
+async function service(kind,params={}){return getJSON('/native/data?'+new URLSearchParams({kind,...params}));}
+const category={TD:'热带低压',TS:'热带风暴',STS:'强热带风暴',TY:'台风',STY:'强台风',SuperTY:'超强台风',ET:'温带气旋'};
+const categoryColor={TD:'#e8c944',TS:'#398fe9',STS:'#44b876',TY:'#ef9b48',STY:'#c65dc6',SuperTY:'#e56567'};
+async function renderTyphoons(){destroyMaps();$('detailContent').innerHTML='<p class="loading-text">正在读取中央气象台台风资料…</p>';const run=++stormId;try{if(!storms||Date.now()-storms.fetchedAt>10*60*1000){const d=await service('storms');if(!Array.isArray(d.typhoonList))throw new Error('无效台风资料');storms={list:d.typhoonList,fetchedAt:Date.now()};store.set('weatherly-v12-storms',storms);}if(run!==stormId||activeTab!=='typhoon')return;renderStormList();}catch{if(run!==stormId||activeTab!=='typhoon')return;const old=store.get('weatherly-v12-storms',null);if(old&&Array.isArray(old.list)){storms={...old,cached:true};renderStormList()}else $('detailContent').innerHTML=panel('台风预警','<div class="empty-state"><strong>台风资料暂不可用</strong>无法确认当前活动台风，请稍后刷新。</div><a class="official-link" href="https://typhoon.nmc.cn/web.html">查看中央气象台台风资料 ↗</a>');}}
+function renderStormList(){const list=storms.list.filter(a=>Array.isArray(a)&&/^[0-9]+$/.test(String(a[0])));const active=list.filter(a=>a[7]==='start'),shown=(active.length?active:list.slice(0,6)).slice(0,10);if(!shown.length){$('detailContent').innerHTML=panel('台风预警','<div class="empty-state"><strong>资料中暂无活动台风</strong>请继续关注天气变化。</div>','中央气象台 · '+new Date(storms.fetchedAt).toLocaleString('zh-CN'));return;}if(!selectedStorm||!shown.some(s=>s[0]===selectedStorm))selectedStorm=shown[0][0];$('detailContent').innerHTML=`<p class="detail-muted">${storms.cached?'缓存资料，请刷新确认活动状态。':active.length?'显示活动台风；点击名称切换。':'当前列表暂无活动台风，以下为最近记录。'}<br>中央气象台 · 获取于 ${new Date(storms.fetchedAt).toLocaleString('zh-CN')}</p><div class="storm-tabs">${shown.map(a=>`<button data-storm="${a[0]}" class="${a[0]===selectedStorm?'active':''}">${esc(String(a[2]).trim()||a[1])} · ${a[7]==='start'?'活动中':'已结束'}</button>`).join('')}</div><div id="stormContent"><p class="loading-text">正在读取路径…</p></div>`;loadStorm(selectedStorm);}
+async function loadStorm(id){const run=++stormId;try{const d=await service('storm',{id}),s=d.typhoon,points=s?.[8];if(!Array.isArray(s)||!Array.isArray(points)||!points.length)throw new Error('无效路径');if(run!==stormId||activeTab!=='typhoon'||!$('detailsPage').open)return;const p=points.at(-1),forecast=p[11]?.BABJ||[],date=new Date(p[2]),age=Date.now()-p[2],loc={latitude:Number(p[5]),longitude:Number(p[4])},km=distance(city,loc);$('stormContent').innerHTML=panel('',`<div class="storm-top"><h2>${esc(String(s[2]).trim())} ${esc(s[1])}</h2><span>${s[7]==='start'?'活动中':'已结束'}</span></div><p class="detail-muted">${esc(String(s[4]))} 号 · 最近观测 ${date.toLocaleString('zh-CN',{timeZone:'Asia/Shanghai'})}（北京）<br>中心距 ${esc(city.name)} 约 ${fmt(km)} km${age>12*3600000?' · 最近观测较旧，请注意资料时效':''}</p><div id="stormMap" class="map-box" aria-label="台风观测和预报路径地图"></div><div class="storm-legends"><span><i style="background:#ef9b48"></i>实线：观测路径</span><span><i style="background:#5b9ddb"></i>虚线：中央气象台预报</span></div><div class="stat-grid">${stat('当前等级',esc(category[p[3]]||p[3]))}${stat('中心风速',fmt(Number(p[7])),'m/s')}${stat('中心气压',fmt(Number(p[6])),'hPa')}${stat('移动速度',fmt(Number(p[9])),'km/h')}${stat('移动方向',esc(({N:'北',NNE:'东北偏北',NE:'东北',ENE:'东北偏东',E:'东',ESE:'东南偏东',SE:'东南',SSE:'东南偏南',S:'南',SSW:'西南偏南',SW:'西南',WSW:'西南偏西',W:'西',WNW:'西北偏西',NW:'西北',NNW:'西北偏北'})[p[8]]||p[8]||'—'))}${stat('中心位置',fmt(loc.latitude,1)+'°N / '+fmt(loc.longitude,1)+'°E')}</div><h3>最近观测</h3><table class="hour-table"><thead><tr><th>北京时间</th><th>风速</th><th>气压</th><th>等级</th></tr></thead><tbody>${points.slice(-8).reverse().map(x=>`<tr><td>${new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(x[2]))}</td><td>${fmt(Number(x[7]))} m/s</td><td>${fmt(Number(x[6]))}</td><td>${esc(category[x[3]]||x[3])}</td></tr>`).join('')}</tbody></table><a class="official-link" href="https://typhoon.nmc.cn/web.html">中央气象台原始资料 ↗</a>`,'台风位置与预报路径来自中央气象台，预报路径会变化。是否影响当前城市，请查看天气预警发布地区。');if(stormMap)stormMap.remove();stormMap=createMap('stormMap',[loc.latitude,loc.longitude],4);const past=points.filter(x=>finite(Number(x[4]))&&finite(Number(x[5]))).map(x=>[Number(x[5]),Number(x[4])]);if(past.length)L.polyline(past,{color:'#e69948',weight:3}).addTo(stormMap);const predicted=forecast.filter(x=>finite(Number(x[2]))&&finite(Number(x[3]))).map(x=>[Number(x[3]),Number(x[2])]);if(predicted.length)L.polyline([[loc.latitude,loc.longitude],...predicted],{color:'#498fd0',weight:3,dashArray:'6 7'}).addTo(stormMap);points.filter((x,i)=>i%Math.max(1,Math.floor(points.length/20))===0||i===points.length-1).forEach(x=>L.circleMarker([Number(x[5]),Number(x[4])],{radius:4,color:'#fff',weight:1,fillColor:categoryColor[x[3]]||'#d39044',fillOpacity:1}).addTo(stormMap).bindPopup(`${esc(category[x[3]]||x[3])} · ${fmt(Number(x[7]))} m/s`));L.circleMarker([loc.latitude,loc.longitude],{radius:9,color:'#fff',weight:3,fillColor:categoryColor[p[3]]||'#ed9846',fillOpacity:1}).addTo(stormMap);L.circleMarker([city.latitude,city.longitude],{radius:5,color:'#fff',fillColor:'#397ddd',fillOpacity:1}).addTo(stormMap).bindPopup(esc(city.name));const closeTrack=[...past.slice(-12),...predicted];if(closeTrack.length>1)stormMap.fitBounds(closeTrack,{padding:[20,20],maxZoom:6});}
+ catch(e){console.error('Weatherly typhoon: '+e.message);if(run===stormId&&activeTab==='typhoon'&&$('stormContent'))$('stormContent').innerHTML=panel('路径资料暂不可用','<p>无法取得该台风最新详情，请刷新重试。</p><a class="official-link" href="https://typhoon.nmc.cn/web.html">中央气象台台风网 ↗</a>');}}
+async function renderAlerts(force=false){$('detailContent').innerHTML='<p class="loading-text">正在读取天气预警…</p>';const target=city,key=cityKey(target);try{if(!alerts||force||alerts.key!==key||Date.now()-alerts.fetchedAt>5*60*1000){let rows=[],provider='',unsupported=false;if(target.country_code==='HK'){const d=await service('hkwarnings');const contents=d.details||[];rows=contents.map(a=>({title:a.name||a.warningStatementCode||'香港天气警告',area:'香港',body:(a.contents||[]).join('\n'),time:a.updateTime||a.issueTime||'',link:'https://www.hko.gov.hk/sc/wxinfo/warning.htm',local:true}));provider='香港天文台';}else if(target.country_code==='US'){const d=await service('uswarnings',{lat:target.latitude,lon:target.longitude});rows=(d.features||[]).map(x=>({title:x.properties?.headline||x.properties?.event,area:x.properties?.areaDesc,body:x.properties?.description,time:x.properties?.sent,link:'https://www.weather.gov/',local:true}));provider='NOAA / 美国国家气象局';}else if(target.country_code==='CN'||(!target.country_code&&inChina(target))){const d=await service('warnings');if(!Array.isArray(d.result?.data))throw new Error('无效预警资料');const region=(target.admin1||'').replace(/省|市|壮族自治区|回族自治区|维吾尔自治区|自治区/g,''),name=target.name.replace(/市|区|县/g,'');rows=d.result.data.filter(a=>Array.isArray(a)&&typeof a[0]==='string').map(a=>{const local=(name.length>=2&&a[0].includes(name))||(region.length>=2&&a[0].includes(region));const near=finite(Number(a[2]))&&finite(Number(a[3]))?distance(target,{latitude:Number(a[3]),longitude:Number(a[2])}):Infinity;const stamp=String(a[1]||'').split('-')[1]||'';return {title:a[6]||a[0]+'天气预警',area:a[0],time:stamp.length===14?`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6,8)} ${stamp.slice(8,10)}:${stamp.slice(10,12)}`:'',link:/^[\w-]+\.html$/.test(a[1])?'https://www.weather.com.cn/alarm/newalarmcontent.shtml?file='+encodeURIComponent(a[1]):'https://www.weather.com.cn/alarm/',local,near};});provider='中国天气网';}else{unsupported=true;provider='当前地区暂未接通预警资料';}alerts={key,rows,provider,unsupported,fetchedAt:Date.now()};store.set('weatherly-v12-alerts:'+key,alerts);}if(key!==cityKey(city)||activeTab!=='alerts')return;displayAlerts();}catch{if(key!==cityKey(city)||activeTab!=='alerts')return;const old=store.get('weatherly-v12-alerts:'+key,null);if(old){alerts={...old,cached:true};displayAlerts()}else $('detailContent').innerHTML=panel('天气预警','<div class="empty-state"><strong>预警资料暂不可用</strong>当前无法确认是否有预警，不能据此视为无预警。</div><a class="official-link" href="https://www.weather.com.cn/alarm/">查看官方预警资料 ↗</a>');}}
+function displayAlerts(){if(alerts.unsupported){$('detailContent').innerHTML=panel('天气预警','<div class="empty-state"><strong>当前地区预警暂未接通</strong>可查看所属地区气象机构的官方预警。天气预报页仍可使用。</div>');return;}let rows=alertNational?alerts.rows:alerts.rows.filter(a=>a.local||a.near<=50);rows=rows.sort((a,b)=>Number(b.local)-Number(a.local)||(a.near??0)-(b.near??0));$('detailContent').innerHTML=`<div class="select-row"><button class="small-button" id="alertScope">${alertNational?'查看城市及附近':'查看全部预警'}</button><button class="small-button" id="alertReload">更新预警</button></div><p class="detail-muted">${esc(alerts.provider)} · ${alerts.cached?'缓存资料，需重新确认 · ':''}获取于 ${new Date(alerts.fetchedAt).toLocaleString('zh-CN')}<br>${alertNational?'显示数据源的全部发布地区。':'匹配城市所在省份和 50 km 内附近发布地区，请核对具体预警范围。'}</p>${!rows.length?'<div class="empty-state"><strong>资料中未匹配到相关预警</strong>请持续关注天气变化；匹配结果不代表所有预警都已覆盖。</div>':rows.slice(0,160).map(a=>`<article class="alert-card ${a.title?.includes('红色')?'red':a.title?.includes('橙色')?'orange':a.title?.includes('蓝色')?'blue':''}"><h3>${esc(a.title)}</h3><p>发布地区：${esc(a.area)}${!a.local&&finite(a.near)?' · 距城市约 '+fmt(a.near)+' km':''}<br>${esc(a.time||'发布时间请查看原文')}</p>${a.body?`<p>${esc(a.body).replace(/\n/g,'<br>')}</p>`:''}<a href="${esc(a.link)}">查看官方预警原文 ›</a></article>`).join('')}${pack?panel('未来天气概览',pack.data.daily.time.slice(0,3).map((date,i)=>`<div class="detail-day"><span>${dayName(date,i)}<small>${dateShort(date)}</small></span>${icon(condition(pack.data.daily.weather_code[i]).icon)}<span>${condition(pack.data.daily.weather_code[i]).name}</span><strong>${temp(pack.data.daily.temperature_2m_min[i])}° / ${temp(pack.data.daily.temperature_2m_max[i])}°</strong></div>`).join(''),'天气预报不替代官方预警。'):''}`;$('alertScope').onclick=()=>{alertNational=!alertNational;displayAlerts()};$('alertReload').onclick=()=>renderAlerts(true);}
+function comparisonCities(){const all=[...saved];cities.forEach(c=>{if(!all.some(x=>cityKey(x)===cityKey(c)))all.push(c)});return all;}
+let compareA=cityKey(city),compareB=cityKey(saved.find(c=>cityKey(c)!==cityKey(city))||cities[1]);
+function renderCompare(){const all=comparisonCities();if(!all.some(c=>cityKey(c)===compareA))compareA=cityKey(city);if(!all.some(c=>cityKey(c)===compareB))compareB=cityKey(cities[1]);$('detailContent').innerHTML=panel('双城天气对比',`<div class="select-row"><label for="compareA">城市 A</label><select id="compareA" aria-label="对比城市 A">${all.map(c=>`<option value="${cityKey(c)}" ${cityKey(c)===compareA?'selected':''}>${esc(c.name)}</option>`).join('')}</select><label for="compareB">城市 B</label><select id="compareB" aria-label="对比城市 B">${all.map(c=>`<option value="${cityKey(c)}" ${cityKey(c)===compareB?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><p class="detail-muted">添加其他城市后即可在这里比较。显示各城市当地日期的预报。</p><div id="compareContent"><p class="loading-text">正在获取两座城市的预报…</p></div>`);$('compareA').onchange=()=>{compareA=$('compareA').value;compareDay=0;loadComparison()};$('compareB').onchange=()=>{compareB=$('compareB').value;compareDay=0;loadComparison()};loadComparison();}
+async function loadComparison(){const id=++compareId,all=comparisonCities(),a=all.find(c=>cityKey(c)===compareA),b=all.find(c=>cityKey(c)===compareB);comparison=null;$('compareContent').innerHTML='<p class="loading-text">正在获取两座城市的预报…</p>';try{const [pa,pb]=await Promise.all([fetchWeather(a,choice),cityKey(a)===cityKey(b)?Promise.resolve(null):fetchWeather(b,choice)]);if(id!==compareId||activeTab!=='compare'||!$('detailsPage').open)return;comparison={a,b,pa,pb:pb||pa};displayComparison();}catch{if(id===compareId&&activeTab==='compare'&&$('compareContent'))$('compareContent').innerHTML='<div class="empty-state"><strong>暂未取得双城预报</strong>可切换城市或点击刷新重试。</div>';}}
+function displayComparison(){if(!comparison)return;const {a,b,pa,pb}=comparison,dates=pa.data.daily.time.filter(d=>pb.data.daily.time.includes(d)).slice(0,15);compareDay=Math.min(compareDay,dates.length-1);if(!dates.length){$('compareContent').innerHTML='<div class="empty-state">两座城市暂无可匹配的日期预报。</div>';return;}const date=dates[compareDay],ia=pa.data.daily.time.indexOf(date),ib=pb.data.daily.time.indexOf(date),da=pa.data.daily,db=pb.data.daily;$('compareContent').innerHTML=`<div class="date-rail">${dates.map((d,i)=>`<button data-compare-day="${i}" class="${i===compareDay?'active':''}">${dayName(d,i)}<small>${dateShort(d)}</small></button>`).join('')}</div><div class="compare-hero">${[[a,pa,ia],[b,pb,ib]].map(([c,p,i])=>`<div class="compare-card"><h3>${esc(c.name)}</h3>${icon(condition(p.data.daily.weather_code[i]).icon)}<strong>${temp(p.data.daily.temperature_2m_min[i])}° / ${temp(p.data.daily.temperature_2m_max[i])}°</strong><p>${condition(p.data.daily.weather_code[i]).name}</p><p>${esc(p.data.daySources[i])}</p></div>`).join('')}<span class="vs">VS</span></div><h3>详细天气对比</h3><div class="compare-metrics">${[[a,da,ia],[b,db,ib]].map(([c,d,i])=>`<div><h3>${esc(c.name)}</h3><p><small>紫外线最高</small>${fmt(d.uv_index_max?.[i],1)}</p><p><small>降水概率</small>${fmt(d.precipitation_probability_max?.[i])}%</p><p><small>降水量</small>${fmt(d.precipitation_sum?.[i],1)} mm</p><p><small>最大风速</small>${fmt(d.wind_speed_10m_max?.[i],1)} km/h</p></div>`).join('')}</div><h3>15 日平均气温趋势</h3><div class="trend-legend"><span><i></i>${esc(a.name)}</span><span><i></i>${esc(b.name)}</span></div>${lineChart([[pa,da],[pb,db]].map(([p,d])=>dates.map(x=>{const i=d.time.indexOf(x),lo=d.temperature_2m_min[i],hi=d.temperature_2m_max[i];return{x,y:finite(lo)&&finite(hi)?tempValue((lo+hi)/2):null};})),['#ed9846','#4c9ddd'])}<p class="detail-muted">平均气温取每日最高与最低的均值。缺失数值留空。${esc(a.name)}：${esc(pa.source.name)}；${esc(b.name)}：${esc(pb.source.name)}。逐日来源见上方卡片。</p>`;}
+document.addEventListener('click',e=>{const close=e.target.closest('[data-close]');if(close){$(close.dataset.close).close();return;}const open=e.target.closest('[data-open-tab]');if(open){openDetails(open.dataset.openTab);return;}const tab=e.target.closest('[data-tab]');if(tab){changeTab(tab.dataset.tab);return;}const selected=e.target.closest('[data-select-city]');if(selected){selectCity(saved[Number(selected.dataset.selectCity)]);return;}const search=e.target.closest('[data-search-city]');if(search){selectCity(searchResults[Number(search.dataset.searchCity)]);return;}const move=e.target.closest('[data-move-city]');if(move){const i=Number(move.dataset.moveCity);if(i>0){[saved[i-1],saved[i]]=[saved[i],saved[i-1]];persistCity();renderCities()}return;}const del=e.target.closest('[data-delete-city]');if(del){const i=Number(del.dataset.deleteCity);if(saved[i]&&cityKey(saved[i])!==cityKey(city)){saved.splice(i,1);persistCity();renderCities()}return;}const storm=e.target.closest('[data-storm]');if(storm){selectedStorm=Number(storm.dataset.storm);renderStormList();return;}const compare=e.target.closest('[data-compare-day]');if(compare){compareDay=Number(compare.dataset.compareDay);displayComparison();}});
+$('citiesButton').onclick=openCities;$('detailsButton').onclick=()=>openDetails();$('sourceInfo').onclick=()=>$('infoDialog').showModal();$('refresh').onclick=loadWeather;$('chinaSource').onchange=()=>{choice=$('chinaSource').value;store.set('weatherly-china-source',choice);pack=readCache(city);cached=!!pack;renderHome();loadWeather();};$('themeSelect').onchange=()=>applyTheme($('themeSelect').value);$('unitButton').onclick=()=>{unit=unit==='c'?'f':'c';store.set('weatherly-unit',unit);renderHome();syncNative();if($('detailsPage').open)renderDetail()};$('detailRefresh').onclick=()=>{if(activeTab==='typhoon'){storms=null;renderTyphoons()}else if(activeTab==='alerts')renderAlerts(true);else if(activeTab==='map')renderMap();else if(activeTab==='compare')loadComparison();else loadWeather();};
+$('detailsPage').addEventListener('close',()=>{destroyMaps();stormId++;compareId++;});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();if(!$('cityPage').open)openCities()}});
+applyTheme(theme);pack=readCache(city);cached=!!pack;renderHome();loadWeather();setInterval(()=>{$('localTime').textContent='当地时间 '+cityClock()},60000);setInterval(()=>{if(document.visibilityState==='visible'&&!loading)loadWeather()},15*60*1000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!loading&&pack&&Date.now()-new Date(pack.fetchedAt)>15*60*1000)loadWeather()});
