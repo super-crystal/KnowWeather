@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "version_code": 1,
+  "apk_sha256": "F24F744763BA7D8D2AD59A35466BA858C61F263616FF58BC834B98BB535C21D4",
+  "apk_bytes": 37594,
+  "complete_native_source": false,
+  "imported_on": "2026-10-25",
+  "history_note": "Imported verified archive snapshot; original commit history and author dates unavailable.",
+  "native_note": "Original Java source unavailable. Exact archived DEX retained under native-compiled; not reconstructed from later source."
+}
