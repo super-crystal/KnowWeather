@@ -1,0 +1,4 @@
+import {writeFile,mkdir} from 'node:fs/promises';
+await mkdir(new URL('./research/',import.meta.url),{recursive:true});
+const urls={typhoon:'https://typhoon.nmc.cn/web.html',alarm:'https://www.weather.com.cn/alarm/',nmc:'https://www.nmc.cn/publish/country/warning.html',storms:'https://typhoon.nmc.cn/weatherservice/typhoon/jsons/list_default',warnings:'https://www.nmc.cn/rest/warning',radar:'https://api.rainviewer.com/public/weather-maps.json'};
+await Promise.all(Object.entries(urls).map(async([key,url])=>{try{const r=await fetch(url,{signal:AbortSignal.timeout(18000)}),t=await r.text();await writeFile(new URL('./research/'+key+'.txt',import.meta.url),t);console.log(key,r.status,t.length,t.slice(0,400));if(key==='typhoon'||key==='alarm'||key==='nmc')console.log([...t.matchAll(/<script[^>]+src=["']([^"']+)/g)].map(m=>m[1]));}catch(e){console.log(key,e.message)}}));

@@ -45,4 +45,15 @@ button{transition:background-color .18s ease,opacity .18s ease;touch-action:mani
 @media(prefers-reduced-motion:reduce){.sky .cloud,.precip{animation:none}}
 
 /* Static soft clouds avoid continuous full-screen repaint beneath scrolling cards. */
-.sky .cloud{animation:none;will-change:auto}
+.sky .cloud{animation:none;will-change:auto;left:-25%;width:150%;transform:none}
+.sky .cloud.cloud-b{top:34%;height:240px;opacity:.16;left:-25%;transform:none}
+.sky .cloud.cloud-c{top:3%;height:170px;opacity:.2;left:-25%;transform:none}
+
+/* Each cloud spans beyond both viewport edges; no scaled layer edge is visible. */
+.page-expanding,.page-leaving{transform-origin:0 0;overflow:hidden;will-change:transform,border-radius}
+.detail-tabs button[aria-selected=true]{border-bottom-color:transparent}
+.tab-indicator{position:absolute;bottom:0;left:0;height:3px;border-radius:3px;background:var(--accent);pointer-events:none;will-change:transform,width}
+.tab-outgoing{position:fixed;z-index:1000;overflow:hidden;pointer-events:none;contain:paint;background:var(--page)}
+.tab-outgoing .detail-content{max-width:none}
+.tabs-moving{overflow:hidden}
+.tabs-moving #detailContent{will-change:transform;contain:paint}

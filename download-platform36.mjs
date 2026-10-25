@@ -1,0 +1,15 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+const base=new URL('../../tools/android-build/',import.meta.url);
+const xml=await readFile(new URL('repository.xml',base),'utf8');
+const fragment=xml.match(/<remotePackage[^>]*path="platforms;android-36"[^>]*>([\s\S]*?)<\/remotePackage>/)?.[1];
+const archive=fragment?.match(/<complete>([\s\S]*?)<\/complete>/)?.[1];
+const name=archive?.match(/<url>([^<]+)<\/url>/)?.[1];
+const sha1=archive?.match(/<checksum[^>]*>([^<]+)<\/checksum>/)?.[1];
+if(!name||!sha1)throw new Error('Official SDK metadata missing');
+const r=await fetch('https://dl.google.com/android/repository/'+name,{signal:AbortSignal.timeout(180000)});
+if(!r.ok)throw new Error('SDK download failed: '+r.status);
+const data=Buffer.from(await r.arrayBuffer());
+if(createHash('sha1').update(data).digest('hex')!==sha1)throw new Error('SDK checksum mismatch');
+await writeFile(new URL(name,base),data);
+console.log('Verified official Android 16 SDK:',name,data.length);

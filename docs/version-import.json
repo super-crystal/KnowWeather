@@ -1,10 +1,10 @@
 {
-  "version": "1.2.3",
-  "version_code": 6,
-  "apk_sha256": "6641BA09BBA9CD6571764BF9F41B4E33C95BF868B4DAB11653D59643E6B3B8CE",
-  "apk_bytes": 801148,
-  "complete_native_source": false,
+  "version": "1.2.4",
+  "version_code": 7,
+  "apk_sha256": "980F47E5278210A5C16B840CE2318BD8683968BB8D9C7C6BAD360B8D1A1CB0AC",
+  "apk_bytes": 805244,
+  "complete_native_source": true,
   "imported_on": "2026-10-25",
   "history_note": "Imported verified archive snapshot; original commit history and author dates unavailable.",
-  "native_note": "Original Java source unavailable. Exact archived DEX retained under native-compiled; not reconstructed from later source."
+  "native_note": "Full Java source retained."
 }

@@ -1,0 +1,22 @@
+import {writeFile,mkdir} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(fileURLToPath(import.meta.url));
+const revision=await (await fetch('https://api.github.com/repos/nvkelso/natural-earth-vector/commits/master',{headers:{'User-Agent':'Weatherly-geography-builder'},signal:AbortSignal.timeout(20000)})).json();
+if(!/^[a-f0-9]{40}$/.test(revision.sha||''))throw new Error('Natural Earth revision unavailable');
+const names=['ne_50m_land.geojson','ne_50m_lakes.geojson','ne_50m_populated_places.geojson'];
+const inputs=await Promise.all(names.map(async name=>{
+ const url=`https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${revision.sha}/geojson/${name}`;
+ const r=await fetch(url,{signal:AbortSignal.timeout(30000)});if(!r.ok)throw new Error(name+': '+r.status);
+ const raw=await r.text(),data=JSON.parse(raw);if(data.type!=='FeatureCollection'||!data.features.length)throw new Error('Invalid geography');
+ return {name,url,hash:createHash('sha256').update(raw).digest('hex'),data};
+}));
+const compactCoords=c=>typeof c==='number'?Number(c.toFixed(5)):c.map(compactCoords);
+const features=d=>({type:'FeatureCollection',features:d.features.map(f=>({type:'Feature',properties:{},geometry:{type:f.geometry.type,coordinates:compactCoords(f.geometry.coordinates)}}))});
+const places=inputs[2].data.features.map(f=>({name:f.properties.NAME_ZH||f.properties.NAME,lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],zoom:Math.max(2,f.properties.MIN_ZOOM||3),population:f.properties.POP_MAX||0})).sort((a,b)=>b.population-a.population);
+const output=`// Natural Earth 1:50m, public domain. See GEOGRAPHY-SOURCES.md.\nexport const land=${JSON.stringify(features(inputs[0].data))};\nexport const lakes=${JSON.stringify(features(inputs[1].data))};\nexport const places=${JSON.stringify(places)};\n`;
+await writeFile(path.join(root,'web-src/map-data.mjs'),output);
+await mkdir(path.join(root,'research'),{recursive:true});
+await writeFile(path.join(root,'web-src/GEOGRAPHY-SOURCES.md'),`# Geography data\n\nNatural Earth, 1:50 million. Public domain. Downloaded ${new Date().toISOString()}.\n\nhttps://www.naturalearthdata.com/about/terms-of-use/\n\nPinned source revision: ${revision.sha}\n\n${inputs.map(i=>`- ${i.name}: ${i.url}\n  SHA-256: ${i.hash}`).join('\n')}\n\nOnly land/lake geometry and major-place coordinates/Chinese labels are included. Coordinates rounded to five decimals. No street data or weather is fabricated.\n`);
+console.log(JSON.stringify({revision:revision.sha,bytes:Buffer.byteLength(output),land:inputs[0].data.features.length,lakes:inputs[1].data.features.length,places:places.length}));
