@@ -1,14 +1,12 @@
-import {mkdir,readFile,writeFile,copyFile,cp} from 'node:fs/promises';
+import {mkdir,readFile,copyFile,cp} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const src=path.join(root,'web-src'),assets=path.join(root,'assets/web');
-const original=await readFile(path.join(root,'site-reference/app.js'),'utf8');
-const cityList=original.match(/const cities = (\[[\s\S]*?\n\]);/);
-if(!cityList)throw new Error('City catalog is missing');
-const more=[{name:'兰州',aliases:'lanzhou lanzhou shi',latitude:36.0611,longitude:103.8343,country:'中国',country_code:'CN',admin1:'甘肃省',timezone:'Asia/Shanghai'},{name:'余杭区',aliases:'yuhang hangzhou',latitude:30.2741,longitude:119.9785,country:'中国',country_code:'CN',admin1:'浙江省',timezone:'Asia/Shanghai'},{name:'闵行区',aliases:'minhang shanghai',latitude:31.1128,longitude:121.3817,country:'中国',country_code:'CN',admin1:'上海市',timezone:'Asia/Shanghai'}];
-await writeFile(path.join(src,'cities.mjs'),'export '+cityList[0]+'\ncities.push(...'+JSON.stringify(more)+');\n');
+// The checked-in city catalog is the source of truth; no sibling website needed.
+const catalog=await readFile(path.join(src,'cities.mjs'),'utf8');
+if(!catalog.includes('export const cities'))throw new Error('The checked-in city catalog is invalid');
 await mkdir(assets,{recursive:true});
 await cp(src,assets,{recursive:true});
 await copyFile(path.join(root,'native.js'),path.join(assets,'native.js'));
-console.log('Bundled 15-day forecasts, city manager and weather details.');
+console.log('Bundled local weather interface and checked-in city catalog.');

@@ -1,0 +1,9 @@
+# 项目续作入口
+
+当前已发布版本：**1.4.1 / versionCode 11**，标签`v1.4.1`。本地Git已导入11个核验过的历史快照；早期原生源码的缺失情况在每个标签和`docs/version-import.json`中明确记录。
+
+当前版33项检查通过。多云、阴雨、夜云和暮光使用用户提供APK云层法线数据着色得到的4张WebP，来源和生成方式见`research/cloud-assets.json`、`research/shade-clouds.py`及`docs/1.4.1-云层与反编译分析.md`。
+
+后续优先读本文件、`docs/Git版本管理.md`和实际待修改版本说明，再按需读源码。应用入口`web-src/app.js`；动态天空`sky.mjs`、`sky-model.mjs`；原生入口及桌面卡片`src/cn/weatherly/app/`；测试文件位于仓库根目录。
+
+开发记录写在本机`工作记录.md`（不上传），重要的项目状态同步到本文件。不要重新扫描完整聊天、原APK或全部历史版本。密钥单独保存；不提交`.signing/`。既有版本标签和发布包保持不变，后续用新提交及新标签发布。

@@ -1,0 +1,8 @@
+# Preserve the byte-verified release snapshots; do not rewrite Windows line endings.
+* -text
+*.png binary
+*.webp binary
+*.ico binary
+*.mp4 binary
+*.dex binary
+*.zip binary

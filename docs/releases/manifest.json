@@ -1,0 +1,106 @@
+{
+  "current_version": "1.4.1",
+  "git_history_imported_on": "2026-10-25",
+  "history_note": "Verified snapshot import, not original developer commit history.",
+  "versions": [
+    {
+      "version": "1.0.0",
+      "title": "安卓首版",
+      "code": 1,
+      "sdk": 35,
+      "bytes": 37594,
+      "sha256": "F24F744763BA7D8D2AD59A35466BA858C61F263616FF58BC834B98BB535C21D4",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.1.0",
+      "title": "中国气象局数据源与桌面卡片",
+      "code": 2,
+      "sdk": 36,
+      "bytes": 62704,
+      "sha256": "B8FB90953345D6D872730E8D41E4E66D98E8416BF77F6B0B1950AF2DBDC03938",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.2.0",
+      "title": "十五日预报、城市管理与天气详情",
+      "code": 3,
+      "sdk": 36,
+      "bytes": 133095,
+      "sha256": "439A7751EA68653777F20EAA56D24C4D232EF0E613711F2FBE25E3823414007C",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.2.1",
+      "title": "天气地图与台风底图修复",
+      "code": 4,
+      "sdk": 36,
+      "bytes": 788725,
+      "sha256": "4DAE78D36C93E80E6045544534AAB5AAE874F6E1E9F4822C27F467E027A9A735",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.2.2",
+      "title": "按钮反馈、统一刷新与区县定位",
+      "code": 5,
+      "sdk": 36,
+      "bytes": 797049,
+      "sha256": "D8A51549D2D97120E5B411B30BBDF517D7C556ED917B410B98E27178BB56B72D",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.2.3",
+      "title": "长地区布局、选城修复与独立定位卡片",
+      "code": 6,
+      "sdk": 36,
+      "bytes": 801148,
+      "sha256": "6641BA09BBA9CD6571764BF9F41B4E33C95BF868B4DAB11653D59643E6B3B8CE",
+      "complete_native_source": false
+    },
+    {
+      "version": "1.2.4",
+      "title": "主页接缝与按钮展开、分类滑动",
+      "code": 7,
+      "sdk": 36,
+      "bytes": 805244,
+      "sha256": "980F47E5278210A5C16B840CE2318BD8683968BB8D9C7C6BAD360B8D1A1CB0AC",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.3.0",
+      "title": "FlClash动效参考与文档续作",
+      "code": 8,
+      "sdk": 36,
+      "bytes": 805306,
+      "sha256": "AE28EE6D5A0980C8E16152CD0AEA01052260D6F4CF63BCF08F980B41A8DC93F8",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.3.1",
+      "title": "统一选项UI与移除深色模式",
+      "code": 9,
+      "sdk": 36,
+      "bytes": 809465,
+      "sha256": "D7FCBA1A790A01939159DDCA55B7ED2612A2411333895067C1A10DDD54D34FDE",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.0",
+      "title": "动态天气与满屏分层云",
+      "code": 10,
+      "sdk": 36,
+      "bytes": 813688,
+      "sha256": "F207B7EF72613F993B1E3D70B90AB756DBEF91E97F675FCEC77638800C8ACFA0",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.1",
+      "title": "自然云层、光照与前后景漂移",
+      "code": 11,
+      "sdk": 36,
+      "bytes": 1289144,
+      "sha256": "3775972F75D98C74381D28A2A0159EDFBAF0F53E2132CC8A96401F6075C964F6",
+      "complete_native_source": true
+    }
+  ]
+}

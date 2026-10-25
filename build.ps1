@@ -19,6 +19,7 @@ $androidJar = Join-Path $SdkRoot ('platforms/android-' + $targetApi + '/android.
 $java = Join-Path $JavaHome 'bin/java.exe'
 $nativeSources = Join-Path $appRoot 'src'
 $hasSources = Test-Path -LiteralPath $nativeSources
+if(!(Test-Path -LiteralPath (Join-Path $appRoot 'web-src/cities.mjs'))){throw 'City catalog web-src/cities.mjs is missing from the checkout.'}
 function Run-Step([string]$Executable,[string[]]$Arguments) {
   & $Executable @Arguments
   if($LASTEXITCODE -ne 0){throw "Build command failed: $([IO.Path]::GetFileName($Executable)) ($LASTEXITCODE)"}
@@ -27,12 +28,14 @@ foreach($needed in @($androidJar,(Join-Path $toolsRoot 'aapt2.exe'),(Join-Path $
   if(!(Test-Path -LiteralPath $needed)){throw "Required tool missing: $needed"}
 }
 if(!$Unsigned) {
+  if(!$KeyStore){$KeyStore=Join-Path $appRoot '.signing/weatherly-release.p12'}
+  if(!$PasswordFile){$PasswordFile=Join-Path $appRoot '.signing/password.txt'}
   if(!$KeyStore -or !$PasswordFile){throw 'Provide -KeyStore and -PasswordFile for the existing signing identity, or use -Unsigned for a build-only check.'}
   foreach($needed in @($KeyStore,$PasswordFile)){if(!(Test-Path -LiteralPath $needed)){throw "Signing input missing: $needed"}}
 }
 $buildRoot = Join-Path ([IO.Path]::GetTempPath()) ('weatherly-archive-' + $version + '-' + [Guid]::NewGuid().ToString('N'))
 $assetsRoot = Join-Path $buildRoot 'assets'
-$outputRoot = Join-Path $appRoot 'output'
+$outputRoot = Join-Path $appRoot 'output/builds'
 New-Item -ItemType Directory -Force -Path $buildRoot,$assetsRoot,$outputRoot,(Join-Path $buildRoot 'generated'),(Join-Path $buildRoot 'classes'),(Join-Path $buildRoot 'dex') | Out-Null
 Copy-Item -LiteralPath (Join-Path $appRoot 'res') -Destination $buildRoot -Recurse
 Copy-Item -LiteralPath (Join-Path $appRoot 'AndroidManifest.xml') -Destination (Join-Path $buildRoot 'AndroidManifest.xml')
@@ -73,11 +76,11 @@ $archive=[IO.Compression.ZipFile]::Open($unsignedApk,[IO.Compression.ZipArchiveM
 try{[IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive,$dexFile,'classes.dex',[IO.Compression.CompressionLevel]::Optimal) | Out-Null}finally{$archive.Dispose()}
 Run-Step (Join-Path $toolsRoot 'zipalign.exe') @('-P','16','-f','4',$unsignedApk,$alignedApk)
 if($Unsigned) {
-  $finalApk = Join-Path $outputRoot ('知天气-' + $version + '-归档重建-unsigned.apk')
+  $finalApk = Join-Path $outputRoot ('知天气-' + $version + '-unsigned.apk')
   Copy-Item -LiteralPath $alignedApk -Destination $finalApk -Force
   Write-Output 'Unsigned build: verification only, cannot be installed as a signed release.'
 } else {
-  $finalApk = Join-Path $outputRoot ('知天气-' + $version + '-归档重建.apk')
+  $finalApk = Join-Path $outputRoot ('知天气-' + $version + '.apk')
   Run-Step $java @('-jar',(Join-Path $toolsRoot 'lib/apksigner.jar'),'sign','--ks',$KeyStore,'--ks-key-alias',$KeyAlias,'--ks-pass',('file:'+$PasswordFile),'--v1-signing-enabled','true','--v2-signing-enabled','true','--v3-signing-enabled','true','--out',$finalApk,$alignedApk)
   Run-Step $java @('-jar',(Join-Path $toolsRoot 'lib/apksigner.jar'),'verify','--verbose',$finalApk)
 }
@@ -85,4 +88,4 @@ Run-Step (Join-Path $toolsRoot 'zipalign.exe') @('-c','-P','16','4',$finalApk)
 Run-Step (Join-Path $toolsRoot 'aapt2.exe') @('dump','badging',$finalApk)
 Get-FileHash -LiteralPath $finalApk -Algorithm SHA256 | Format-List
 Write-Output "Build files: $buildRoot"
-Write-Output "Rebuilt APK: $finalApk"
+Write-Output "Built APK: $finalApk"
