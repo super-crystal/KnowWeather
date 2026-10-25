@@ -1,0 +1,44 @@
+{
+  "generator": "research/shade-clouds.py",
+  "origin": "Decoded normal maps from user-provided com.coloros.weather2 16.41.2 APK",
+  "apk_sha256": "FBE3B5CE9353E6F1B1BC9BAE94414453D1254BA027826A059E0B0A8D5432FA6D",
+  "orientation": "vertical UV origin corrected",
+  "assets": [
+    {
+      "file": "assets/weather/cloud-1.webp",
+      "width": 798,
+      "height": 488,
+      "bytes": 112872,
+      "sha256": "247EF3138B72094EC7DCA4EE14CD64BCCF3C4CA2081B09C96C1F0A9FC9E7577F",
+      "input": "research/cloud-inputs/b_04_normal.png",
+      "input_sha256": "515E048D0237E21CFCD2EC00602708865EECF209C79C86583D32BC70F6344908"
+    },
+    {
+      "file": "assets/weather/cloud-2.webp",
+      "width": 798,
+      "height": 488,
+      "bytes": 151762,
+      "sha256": "F13DD25051A601C2F7FB8847DE341ABC9DB0826659E54644ED3BD414444D92B0",
+      "input": "research/cloud-inputs/b_09_normal.png",
+      "input_sha256": "906BA853FBB3AA170F0CC0ADCBED8D1119A50F90EF3AC7D58B4042E4F8028DF5"
+    },
+    {
+      "file": "assets/weather/cloud-3.webp",
+      "width": 798,
+      "height": 488,
+      "bytes": 115536,
+      "sha256": "871A9A920ED43B361325A85352DFE5FDBF81682A9AF9F5E8A8050FFABDAF12BB",
+      "input": "research/cloud-inputs/b_03_normal.png",
+      "input_sha256": "5D4CA447546CEE87B78D19261A6C199F02303A0EFCDB9173720641119449F0BE"
+    },
+    {
+      "file": "assets/weather/cloud-4.webp",
+      "width": 798,
+      "height": 488,
+      "bytes": 94164,
+      "sha256": "E7B879BB482EA893F95731F2C77778A0F186C17FAF0010CE8C3CA32AC0339024",
+      "input": "research/cloud-inputs/c_05_normal.png",
+      "input_sha256": "D1E81BA8ADEE6412C680EAE366039C5823387736DC19A44B2BBDCD7143FE06B6"
+    }
+  ]
+}

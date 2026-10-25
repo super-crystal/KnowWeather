@@ -28,4 +28,18 @@
 
 https://dl.google.com/android/repository/sys-img/google_apis/x86_64-36_r07.zip
 
-1895447397 字节，SHA1 c6bf44bdcd885bb902b4ba752d111a073ad7a817。尚未下载/安装该镜像，也未验证它能运行本参考 APK。用户要求优先收尾本应用资源，此支线暂后置。
+1895447397 字节，SHA1 c6bf44bdcd885bb902b4ba752d111a073ad7a817。上述为最初待办，当前实测进展见下方。
+
+
+## 2026-10-25 镜像与APK实测补充
+
+镜像已安装至tools/android-build/sdk/system-images/android-36/google_apis/x86_64，独立AVD ColorOSReference16可正常启动，实际支持x86_64,arm64-v8a，libndk_translation.so已启用。未修改的ColorOS APK安装成功，ARM64原生库libmmkv.so加载成功；主活动却因缺com.oplus.os.OplusBuild而崩溃，并报告缺OplusActivityManager和厂商天气Provider。
+
+因此当前限制为厂商系统框架/服务，ARM64安装问题已解决。未进入可操作天气主页，仍不能称逐帧观察参考动画。没有改APK或刷厂商ROM，测试实例已关闭，镜像与AVD保留。详细证据见项目根目录相对路径 ../weatherly-reference/ColorOS/google-apis-qa/兼容测试结果.md。开发区此说明为后续续作补充，不改写已归档的1.4.0历史文档。
+
+
+## 2026-10-25 直接素材读取补充
+
+直接解包assets/weather.coz2后得到1269个内部文件，包含65张ASTC纹理、63个Prefab场景，以及Lua/材质/粒子配置。结合外层资源，已提取1671项，成功解码76张GPU纹理，整理371张图片、3段兼容视频和5个Lottie包；零解码错误，原始副本逐项哈希核验通过。未执行第三方脚本。
+
+预览入口：../weatherly-reference/ColorOS/readable-assets/index.html（相对项目根目录）；完整清单inventory.json、场景清单scenes.json、说明素材读取说明.md。图片包含原始法线/通道数据，不能把数据色当成完整渲染颜色；视频转H.264只为兼容播放，不代表已经完整还原原App。后续优先读本目录，避免重扫APK。当前知天气仍为1.4.0，未自动加入或发布提取素材。

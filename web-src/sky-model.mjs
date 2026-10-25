@@ -3,17 +3,21 @@ export const scenes=['sunny','cloudy','overcast','fog','rain','snow','storm','ni
 export function weatherScene(input={}){
  const scene=scenes.includes(input.scene)?input.scene:'unknown',night=input.is_day===0||scene==='night'||scene==='nightcloud';
  const wind=clamp(input.wind_speed_10m,0,70),wet=clamp(input.precipitation,0,12);
- const cloudCounts={sunny:3,cloudy:12,overcast:14,fog:10,rain:11,snow:11,storm:14,night:2,nightcloud:12,unknown:4};
- return {scene,night,wind,rain:scene==='rain'||scene==='storm',snow:scene==='snow',clouds:cloudCounts[scene],
-  particles:scene==='snow'?60:scene==='storm'?108:scene==='rain'?Math.round(52+wet*4):0,drift:3+wind*.16,
-  palette:night?['#07182e','#223b60','#557897']:scene==='sunny'?['#2365ad','#579dde','#a4d5ec']:scene==='cloudy'?['#466cac','#799aca','#c4cbd9']:scene==='overcast'?['#506780','#869aaf','#b6c6d1']:scene==='fog'?['#7d96aa','#a2b5bf','#c2d0d4']:scene==='rain'?['#29465f','#5c7e98','#9db5c4']:scene==='storm'?['#1b2d49','#485b78','#8190a4']:scene==='snow'?['#688ea8','#9cb9cb','#cedfe7']:['#526f8c','#819eb5','#b1c8d4']};
+ const cloudCounts={sunny:2,cloudy:6,overcast:8,fog:6,rain:8,snow:8,storm:8,night:2,nightcloud:6,unknown:4};
+ const hour=typeof input.time==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(input.time)?Number(input.time.slice(11,13))+Number(input.time.slice(14,16))/60:12;
+ const phase=night?'night':hour>=16.5&&hour<20?'sunset':hour>=5&&hour<8?'sunrise':'day';
+ const warm=(phase==='sunset'||phase==='sunrise')&&['sunny','cloudy'].includes(scene);
+ return {scene,night,phase,wind,rain:scene==='rain'||scene==='storm',snow:scene==='snow',clouds:cloudCounts[scene],
+  particles:scene==='snow'?60:scene==='storm'?108:scene==='rain'?Math.round(52+wet*4):0,drift:1.8+wind*.10,
+  palette:night?['#07182e','#1a3154','#425e83']:warm?['#4c65a2','#a08cbd','#dfb1a5']:scene==='sunny'?['#2365ad','#579dde','#a4d5ec']:scene==='cloudy'?['#2556ad','#63a3e6','#a0d2ef']:scene==='overcast'?['#506780','#869aaf','#b6c6d1']:scene==='fog'?['#7d96aa','#a2b5bf','#c2d0d4']:scene==='rain'?['#29465f','#5c7e98','#9db5c4']:scene==='storm'?['#1b2d49','#485b78','#8190a4']:scene==='snow'?['#688ea8','#9cb9cb','#cedfe7']:['#526f8c','#819eb5','#b1c8d4']};
 }
-export function cloudBand(index,time,profile,width,height){
- const dense=profile.clouds>=10,span=width*(1.45+(index%4)*.19),period=span*.7;
- const speed=profile.drift*(.28+(index%4)*.15),offset=((time*speed+index*width*.37)%period+period)%period;
- return {x:-period+offset,y:height*(dense?-.19+index*1.12/(profile.clouds-1):.12+index*.25)+Math.sin(time*.08+index)*7,
-  width:span,height:Math.max(span*.43,height*(dense?.27:.18)),period,
-  alpha:profile.scene==='sunny'?.2:profile.scene==='night'?.13:profile.scene==='fog'?.32:(profile.night?.34:.38)+(index%3)*.06};
+export function cloudBand(index,time,profile,width,height,travel=time*profile.drift){
+ const dense=profile.clouds>=6,depth=index%3,span=Math.min(width*(1.35+depth*.28),height*1.15),period=span+width*1.15;
+ const base=[-.55,.48,-.64,.37,-.5,.44,-.4,.28][index%8]*width;
+ const offset=((travel*(.4+depth*.36)+base+span)%period+period)%period;
+ return {x:-span+offset,y:height*(dense?-.18+index*.061:.02+index*.11)+Math.sin(time*.055+index)*2,
+  width:span,height:span*.6,period,depth,sprite:(index*7+Math.floor(index/3))%4,
+  alpha:profile.scene==='sunny'?.22:profile.scene==='night'?.14:profile.scene==='fog'?.36:(profile.night?.65:.90)+depth*.04};
 }
 export function skySize(width,height,dpr=1,quality=1){
  width=clamp(width,1,5000);height=clamp(height,1,5000);const scale=Math.min(clamp(dpr,.5,1.35),Math.sqrt(600000/(width*height)))*clamp(quality,.55,1);

@@ -62,7 +62,7 @@ public final class MainActivity extends Activity {
     if(!"weather".equals(widgetStyle)&&!"light".equals(widgetStyle)){WeatherRepository.prefs(this).edit().putString("widgetTheme","weather").apply();WeatherWidgetProvider.updateAll(this);}
     WebSettings settings = webView.getSettings();
     settings.setJavaScriptEnabled(true);
-    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.4.0");
+    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.4.1");
     settings.setDomStorageEnabled(true);
     settings.setGeolocationEnabled(true);
     settings.setAllowFileAccess(false);
