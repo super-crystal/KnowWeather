@@ -4,7 +4,7 @@
 
 后续续作优先阅读 [项目状态](docs/PROJECT_STATUS.md) 和 [Git版本管理](docs/Git版本管理.md)；本机工作记录保留在本地，不上传。阶段完成或中断前更新状态。1.3.0 参考 FlClash 的容器裁剪、短距离分类切换、运动期间合并刷新和快照主题淡变，独立适配 WebView 与 Android；分析及固定源码链接见 [FlClash动画分析](docs/FlClash动画分析.md)。
 
-版本通过 Git 提交和 `v1.0.0`～`v1.4.1` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases或既有网盘发布。GitHub私有仓库地址待关联。
+版本通过 Git 提交和 `v1.0.0`～`v1.4.1` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases或既有网盘发布。私有源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
 
 右上角“城市”支持搜索、添加、切换、上移排序和移除，最多保存 20 个城市。“天气详情”提供实况、48 小时、15 日、空气质量、气象信息、日出日落、生活建议、降水雷达、台风路径、双城对比和天气预警。不含广告或内容推荐。晴、多云、阴、雾、雨、雪、雷暴及晴朗/多云夜晚分别展示对应背景，应用界面统一浅色，不随系统进入深色模式；实际夜间天气背景仍保留。
 

@@ -40,6 +40,6 @@ node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.t
 
 跟踪Java/Web源码、应用资源、构建脚本、测试、版本说明及云图来源记录。`.signing/`、密钥/密码文件、APK、输出、缓存、研究网页快照和本机工作日志被忽略；不把SDK、模拟器、ColorOS原APK或反编译目录搬进仓库。云图及地图/Leaflet来源继续按既有文档记录，不为整个项目随意添加开源授权。
 
-GitHub仓库优先使用私有可见性。当前连接插件可以读写已授权的已有仓库，但不能创建新仓库；提供空私有仓库地址后再连接和同步。本地Git已经能独立使用，不需要等远程仓库创建。
+GitHub使用私有仓库 [super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)，本机origin为`https://github.com/super-crystal/KnowWeather.git`。完整提交与标签通过Git客户端同步；Windows凭据由Git Credential Manager保存，不把密码或访问令牌写入项目。APK仍与源码分开管理。
 
 本机还保存了`output/git-migration/weatherly-history.bundle`作为独立Git备份。原11个版本目录及已发安装包仍保留，不删除。迁移核验见 [Git迁移验证](Git迁移验证.md)。

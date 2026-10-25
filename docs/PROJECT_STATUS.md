@@ -8,4 +8,4 @@
 
 开发记录写在本机`工作记录.md`（不上传），重要的项目状态同步到本文件。不要重新扫描完整聊天、原APK或全部历史版本。密钥单独保存；不提交`.signing/`。既有版本标签和发布包保持不变，后续用新提交及新标签发布。
 
-Git迁移已核对11个快照；最新纯源码导出通过33项检查和独立Unsigned构建，28项Web资产、DEX/资源表与正式1.4.1一致。详见`docs/Git迁移验证.md`。GitHub账号super-crystal已连接，空私有仓库URL尚待提供，本机Git认证待关联时处理；当前没有上传远程。
+Git迁移已核对11个快照；最新纯源码导出通过33项检查和独立Unsigned构建，28项Web资产、DEX/资源表与正式1.4.1一致。详见`docs/Git迁移验证.md`。私有远程仓库为https://github.com/super-crystal/KnowWeather，本机origin使用其HTTPS地址，远程同步通过Git Credential Manager授权。

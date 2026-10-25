@@ -5,4 +5,4 @@
 - 从最新提交导出纯源码到隔离目录（没有旁边的原始网站、没有.signing），33项检查通过、Unsigned构建通过；28项Web资产、classes.dex、resources.arsc与已发布1.4.1逐字节一致。
 - 既有签名安装包未被改写；构建产物改放output/builds/，缺少原签名时停止或显式Unsigned，不自动新建签名。
 - 本机备份output/git-migration/weatherly-history.bundle可恢复完整Git历史，不含签名材料；日志和机器操作记录保留在忽略的output/与工作记录.md。
-- GitHub账号super-crystal已连接；目前仅能读写已授权已有仓库，插件不支持创建仓库。本机Git还未登录GitHub，远程仓库尚未关联，未声称已上传。用户提供空私有仓库链接后再继续远程同步。
+- 用户已提供私有仓库super-crystal/KnowWeather；仓库ID1432842698，账号有push/admin权限，本地origin已关联。首次Git客户端登录使用系统Git Credential Manager的设备授权流程，用户自行在GitHub完成授权；项目不保存登录令牌。远程引用与本地提交/标签的最终核对记录保留在本机output/git-migration/verification.json。
