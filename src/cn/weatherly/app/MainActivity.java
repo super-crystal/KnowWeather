@@ -36,7 +36,7 @@ public final class MainActivity extends Activity {
   private FrameLayout root;
   private GeolocationPermissions.Callback locationCallback;
   private String locationOrigin;
-  private boolean activeDark;
+  private String activeScene;
 
   @Override public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -56,10 +56,13 @@ public final class MainActivity extends Activity {
     } else {
       root.setFitsSystemWindows(true);
     }
-    applyBars(isSystemDark());
+    applyBars();
+    WeatherRepository.prefs(this).edit().putString("appTheme","light").apply();
+    String widgetStyle=WeatherRepository.prefs(this).getString("widgetTheme","weather");
+    if(!"weather".equals(widgetStyle)&&!"light".equals(widgetStyle)){WeatherRepository.prefs(this).edit().putString("widgetTheme","weather").apply();WeatherWidgetProvider.updateAll(this);}
     WebSettings settings = webView.getSettings();
     settings.setJavaScriptEnabled(true);
-    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.3.0");
+    settings.setUserAgentString(settings.getUserAgentString()+" Weatherly/1.3.1");
     settings.setDomStorageEnabled(true);
     settings.setGeolocationEnabled(true);
     settings.setAllowFileAccess(false);
@@ -83,7 +86,7 @@ public final class MainActivity extends Activity {
           try {
             org.json.JSONObject data=new org.json.JSONObject(payload);
             if(!WeatherRepository.sync(getApplicationContext(),data))return emptyResponse();
-            WeatherRepository.prefs(getApplicationContext()).edit().putString("appTheme",data.optString("theme","auto")).apply();
+            WeatherRepository.prefs(getApplicationContext()).edit().putString("appTheme","light").apply();
             WeatherWidgetProvider.updateAll(getApplicationContext());
             if(WeatherWidgetProvider.hasWidgets(getApplicationContext()))WidgetRefreshService.schedule(getApplicationContext(),true);
             return new WebResourceResponse("application/json","UTF-8",200,"OK",new HashMap<>(),new ByteArrayInputStream("{\"ok\":true}".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
@@ -111,8 +114,7 @@ public final class MainActivity extends Activity {
       @Override public boolean onConsoleMessage(ConsoleMessage message) {
         if(message.messageLevel()==ConsoleMessage.MessageLevel.ERROR)android.util.Log.e("Weatherly",message.message());
         // The bundled page emits only an enum; no native JavaScript bridge is exposed.
-        if (message.message().equals("WEATHERLY_THEME:dark")) applyBars(true);
-        else if (message.message().equals("WEATHERLY_THEME:light")) applyBars(false);
+        if (message.message().equals("WEATHERLY_THEME:light")) applyBars();
         else if(message.message().startsWith("WEATHERLY_SKY:")) applySky(message.message().substring(14));
         return true;
       }
@@ -142,27 +144,24 @@ public final class MainActivity extends Activity {
     }
     return true;
   }
-  private boolean isSystemDark() {
-    return (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES;
-  }
   private void applySky(String scene) {
     String color;
     switch(scene){case "sunny":color="#2859AE";break;case "cloudy":color="#414D9B";break;case "fog":color="#8F9DAB";break;case "rain":color="#273E5D";break;case "storm":color="#202C48";break;case "snow":color="#708BA9";break;case "night":case "nightcloud":color="#08142F";break;case "overcast":color="#586C89";break;case "unknown":color="#61758D";break;default:return;}
-    activeDark=true;int value=Color.parseColor(color);root.setBackgroundColor(value);getWindow().setStatusBarColor(value);getWindow().setNavigationBarColor(value);
+    activeScene=scene;int value=Color.parseColor(color);root.setBackgroundColor(value);getWindow().setStatusBarColor(value);getWindow().setNavigationBarColor(value);
     if(Build.VERSION.SDK_INT>=30&&getWindow().getInsetsController()!=null)getWindow().getInsetsController().setSystemBarsAppearance(0,android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS|android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
     else getWindow().getDecorView().setSystemUiVisibility(0);
   }
-  private void applyBars(boolean dark) {
-    activeDark=dark;
-    int color=Color.parseColor(dark?"#151D26":"#F5F7F9");
+  private void applyBars() {
+    activeScene=null;
+    int color=Color.parseColor("#F5F7F9");
     root.setBackgroundColor(color);webView.setBackgroundColor(color);
     getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
     if(Build.VERSION.SDK_INT>=30) {
       int flags=android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-      if(getWindow().getInsetsController()!=null) getWindow().getInsetsController().setSystemBarsAppearance(dark?0:flags,flags);
+      if(getWindow().getInsetsController()!=null) getWindow().getInsetsController().setSystemBarsAppearance(flags,flags);
     } else {
-      int flags=dark?0:View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-      if(Build.VERSION.SDK_INT>=26 && !dark) flags|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+      int flags=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+      if(Build.VERSION.SDK_INT>=26) flags|=View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
       getWindow().getDecorView().setSystemUiVisibility(flags);
     }
   }
@@ -175,8 +174,7 @@ public final class MainActivity extends Activity {
   }
   @Override public void onConfigurationChanged(Configuration configuration) {
     super.onConfigurationChanged(configuration);
-    webView.evaluateJavascript("window.weatherlySystemTheme && window.weatherlySystemTheme("+isSystemDark()+")",null);
-    applyBars(activeDark);
+    if(activeScene!=null)applySky(activeScene);else applyBars();
   }
   @Override public void onBackPressed() {
     webView.evaluateJavascript("(function(){return window.weatherlyBack ? window.weatherlyBack() : false;})()",value->{

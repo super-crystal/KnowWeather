@@ -59,7 +59,7 @@ export function openPage(dialog,trigger){
  const bounds=dialog.getBoundingClientRect(),rect=captured?.width&&captured?.height?captured:{left:bounds.left+bounds.width/2-24,top:bounds.top+bounds.height/2-24,width:48,height:48};
  pageOrigins.set(dialog,{trigger,rect});if(reduced()||!dialog.animate)return Promise.resolve();
  const full=dialog.classList.contains('page-dialog'),finishMotion=beginMotion();dialog.classList.add('page-expanding');
- const start=full?pageClipFrame(bounds,rect):{transform:'translate3d('+(rect.left+rect.width/2-bounds.left-bounds.width/2)+'px,'+(rect.top+rect.height/2-bounds.top-bounds.height/2)+'px,0) scale(.92)',opacity:0};
+ const start=dialog.classList.contains('choice-sheet')?{transform:'translate3d(0,100%,0)',opacity:1}:full?pageClipFrame(bounds,rect):{transform:'translate3d('+(rect.left+rect.width/2-bounds.left-bounds.width/2)+'px,'+(rect.top+rect.height/2-bounds.top-bounds.height/2)+'px,0) scale(.92)',opacity:0};
  const animation=dialog.animate([start,full?{clipPath:'inset(0px 0px 0px 0px round 0px)'}:{transform:'translate3d(0,0,0) scale(1)',opacity:1}],{duration:motion.container,easing:motion.standard,fill:'both'});
  const cover=full?pageCover(dialog,trigger,bounds,rect):null,fade=cover?.animate([{opacity:1,offset:0},{opacity:1,offset:.2},{opacity:0,offset:.45},{opacity:0,offset:1}],{duration:motion.container,easing:'linear',fill:'both'});
  fade?.finished.catch(()=>{});
@@ -74,7 +74,7 @@ export function closePage(dialog){
  const full=dialog.classList?.contains?.('page-dialog'),bounds={left:dialog.offsetLeft||0,top:dialog.offsetTop||0,width:dialog.offsetWidth,height:dialog.offsetHeight};
  dialog.classList.add('page-leaving');dialog.inert=true;
  let animation,done=false;const cleanup=()=>{if(done)return;done=true;dialog.close();animation?.cancel();dialog.inert=false;dialog.classList.remove('page-leaving','page-expanding');closing.delete(dialog);pageOrigins.delete(dialog);activeCleanups.delete(cleanup);finishMotion();};
- const task=Promise.resolve().then(async()=>{if(!reduced()&&dialog.animate){const end=full&&rect&&bounds.width?pageClipFrame(bounds,rect):{transform:'scale(.94)',opacity:0};animation=dialog.animate([full?{clipPath:from.clipPath}:{transform:from.transform,opacity:from.opacity},end],{duration:motion.return,easing:motion.standard,fill:'both'});await animation.finished.catch(()=>{});}cleanup();});
+ const task=Promise.resolve().then(async()=>{if(!reduced()&&dialog.animate){const end=dialog.classList.contains('choice-sheet')?{transform:'translate3d(0,100%,0)',opacity:1}:full&&rect&&bounds.width?pageClipFrame(bounds,rect):{transform:'scale(.94)',opacity:0};animation=dialog.animate([full?{clipPath:from.clipPath}:{transform:from.transform,opacity:from.opacity},end],{duration:motion.return,easing:motion.standard,fill:'both'});await animation.finished.catch(()=>{});}cleanup();});
  closing.set(dialog,task);activeCleanups.add(cleanup);return task;
 }
 function scrollRail(rail,left,smooth){

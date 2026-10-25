@@ -1,7 +1,6 @@
 package cn.weatherly.app;
 
 import android.content.Context;
-import android.content.res.Configuration;
 import android.graphics.*;
 import org.json.JSONObject;
 import java.text.SimpleDateFormat;
@@ -19,7 +18,7 @@ final class CardRenderer {
     JSONObject snapshot=WeatherRepository.snapshot(context),city=WeatherRepository.city(context);
     boolean valid=WeatherRepository.number(snapshot,"temperature"),day=snapshot.optInt("isDay",1)!=0;
     String style=WeatherRepository.prefs(context).getString("widgetTheme","weather");
-    boolean night="dark".equals(style)||("weather".equals(style)&&valid&&!day)||("system".equals(style)&&(context.getResources().getConfiguration().uiMode&Configuration.UI_MODE_NIGHT_MASK)==Configuration.UI_MODE_NIGHT_YES);
+    boolean night=!"light".equals(style)&&valid&&!day;
     int top=Color.parseColor(night?"#070F32":"#2454AF"),bottom=Color.parseColor(night?"#233961":"#75BCE9");
     Paint paint=new Paint(3);Path clip=new Path();clip.addRoundRect(new RectF(0,0,420,height),52,52,Path.Direction.CW);canvas.save();canvas.clipPath(clip);
     paint.setShader(new LinearGradient(0,0,70,height,top,bottom,Shader.TileMode.CLAMP));canvas.drawRect(0,0,420,height,paint);paint.setShader(null);

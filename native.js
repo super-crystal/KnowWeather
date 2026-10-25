@@ -13,18 +13,12 @@ if (!AbortSignal.any) AbortSignal.any = signals => {
   return controller.signal;
 };
 if (!Array.prototype.at) Array.prototype.at = function (index) { return this[index < 0 ? this.length + index : index]; };
-try {if(!localStorage.getItem('weatherly-theme'))localStorage.setItem('weatherly-theme',JSON.stringify('auto'));}catch{}
+try {localStorage.setItem('weatherly-theme',JSON.stringify('light'));}catch{}
+document.documentElement.dataset.theme='light';
 let reportedTheme;
-const reportTheme=()=>{const value=!document.querySelector('dialog[open]')&&document.body?.dataset.scene?'WEATHERLY_SKY:'+document.body.dataset.scene:'WEATHERLY_THEME:'+document.documentElement.dataset.theme;if(value!==reportedTheme){reportedTheme=value;console.log(value);}};
+const reportTheme=()=>{const value=!document.querySelector('dialog[open]')&&document.body?.dataset.scene?'WEATHERLY_SKY:'+document.body.dataset.scene:'WEATHERLY_THEME:light';if(value!==reportedTheme){reportedTheme=value;console.log(value);}};
 new MutationObserver(reportTheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-window.weatherlySystemTheme = dark => {
-  try {
-    if(JSON.parse(localStorage.getItem('weatherly-theme'))==='auto') {
-      document.documentElement.dataset.theme=dark?'dark':'light';
-      reportTheme();
-    }
-  } catch {}
-};
+window.weatherlySystemTheme = () => {document.documentElement.dataset.theme='light';reportTheme();};
 document.addEventListener('DOMContentLoaded',()=>{
   reportTheme();
   document.getElementById('mobileLocate')?.addEventListener('click',()=>document.getElementById('locate').click());
