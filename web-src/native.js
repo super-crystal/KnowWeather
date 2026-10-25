@@ -28,3 +28,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   reportTheme();
   document.getElementById('mobileLocate').addEventListener('click',()=>document.getElementById('locate').click());
 });
+let nativeSyncTimer;
+window.weatherlySync = data => {
+  clearTimeout(nativeSyncTimer);
+  nativeSyncTimer=setTimeout(()=>{
+    const w=data.weather,d=w?.daily,c=w?.current;
+    const payload={city:data.city,requested:data.requested,unit:data.unit,theme:data.theme,cached:!!data.cached};
+    if(c&&d)payload.snapshot={temperature:c.temperature_2m,low:d.temperature_2m_min?.[0],high:d.temperature_2m_max?.[0],code:c.weather_code,isDay:c.is_day,timezone:w.timezone,time:c.time,sunrise:d.sunrise?.[0],sunset:d.sunset?.[0],nextSunrise:d.sunrise?.[1],source:data.source?.name||'Open-Meteo',fetchedAt:data.fetchedAt};
+    if(location.hostname==='appassets.androidplatform.net')fetch('/native/sync?data='+encodeURIComponent(JSON.stringify(payload))).catch(()=>{});
+  },120);
+};

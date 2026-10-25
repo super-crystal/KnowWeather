@@ -25,6 +25,7 @@ const cities = [
   {name:'新加坡',aliases:'singapore xinjiapo',latitude:1.3521,longitude:103.8198,country:'新加坡',country_code:'SG',admin1:'新加坡',timezone:'Asia/Singapore'}
 ];
 const sources = {
+  CMA:{model:'cma',name:'中国气象局 CMA',detail:'GRAPES 全球模型 · 通过 Open-Meteo'},
   CN:{model:'ecmwf_ifs025',name:'ECMWF IFS',detail:'欧洲中期天气预报中心 · 全球模型'},
   US:{model:'gfs_seamless',name:'NOAA GFS',detail:'美国国家海洋和大气管理局'},
   JP:{model:'jma_seamless',name:'JMA',detail:'日本气象厅 · 日本地区模型'},
@@ -45,7 +46,11 @@ let unit = storage.get('weatherly-unit','c');
 if (!['c','f'].includes(unit)) unit='c';
 let chartMode='temperature', weather=null, activeSource=null, fetchedAt=null, loading=false, requestSequence=0, weatherController, searchController, searchSequence=0, searchTimer, toastTimer;
 const mediaTheme = matchMedia('(prefers-color-scheme: dark)');
-const sourceFor = city => sources[city.country_code] || sources.GLOBAL;
+let chinaSource = storage.get('weatherly-china-source','auto');
+if(!['auto','cma','ecmwf'].includes(chinaSource))chinaSource='auto';
+const inChina = city => ['CN','HK','MO','TW'].includes(city.country_code) || (!city.country_code && city.latitude>=18 && city.latitude<=54 && city.longitude>=73 && city.longitude<=135);
+const sourceFor = city => inChina(city) && chinaSource==='cma' ? sources.CMA : inChina(city) && chinaSource==='ecmwf' ? sources.CN : sources[city.country_code] || sources.GLOBAL;
+function syncNative(){if(typeof window.weatherlySync==='function')window.weatherlySync({city:selectedCity,requested:sourceFor(selectedCity).model,unit,theme,weather,source:activeSource,fetchedAt:fetchedAt?.toISOString(),cached:/缓存|失败/.test($('liveState').textContent)});}
 const finite = n => typeof n==='number' && Number.isFinite(n);
 const fmt = (n, decimal=0) => finite(n) ? n.toFixed(decimal) : '—';
 const temp = n => finite(n) ? Math.round(unit==='f' ? n*9/5+32 : n) : '—';
@@ -71,6 +76,7 @@ function applyTheme(value) {
   $('quickTheme').innerHTML=icon(actual==='light'?'moon':'sun');
   $('quickTheme').setAttribute('aria-label',actual==='light'?'切换深色主题':'切换浅色主题');
   storage.set('weatherly-theme',theme);
+  syncNative();
 }
 mediaTheme.addEventListener('change',()=>{if(theme==='auto')applyTheme('auto');});
 document.querySelectorAll('.theme-control button').forEach(b=>b.addEventListener('click',()=>applyTheme(b.dataset.theme)));
@@ -78,7 +84,7 @@ $('quickTheme').addEventListener('click',()=>applyTheme(document.documentElement
 function applyUnit(value) {
   unit=value;storage.set('weatherly-unit',unit);
   document.querySelectorAll('[data-unit]').forEach(b=>{b.classList.toggle('selected',b.dataset.unit===unit);b.setAttribute('aria-pressed',b.dataset.unit===unit);});
-  renderWeather();
+  renderWeather();syncNative();
 }
 document.querySelectorAll('[data-unit]').forEach(b=>b.addEventListener('click',()=>applyUnit(b.dataset.unit)));
 document.querySelectorAll('[data-chart]').forEach(b=>b.addEventListener('click',()=>{chartMode=b.dataset.chart;document.querySelectorAll('[data-chart]').forEach(el=>{el.classList.toggle('selected',el===b);el.setAttribute('aria-pressed',el===b);});renderHourly();}));
@@ -90,6 +96,10 @@ function renderCity() {
   $('cityRegion').textContent=[selectedCity.country,selectedCity.admin1].filter(Boolean).join(' · ') || '当前位置';
   document.title=`${selectedCity.name}天气 · 知天气`;
   renderClock();renderSaved();
+  $('chinaSource').value=chinaSource;$('chinaSource').disabled=!inChina(selectedCity);
+  $('chinaSourceNote').textContent=inChina(selectedCity)?'CMA 通过 Open-Meteo 获取；不可用时自动切换备用源。':'当前为海外城市，自动匹配所在地区的数据源。中国地区的选择已保留。';
+  document.querySelector('.source-heading').innerHTML=inChina(selectedCity)&&chinaSource!=='auto'?'你为中国城市选择的数据源 <span class="auto-tag">手动</span>':'为这座城市，自动匹配数据源 <span class="auto-tag">自动</span>';
+  syncNative();
 }
 function renderClock() {
   const timeZone=weather?.timezone || selectedCity.timezone || 'Asia/Shanghai';
@@ -121,8 +131,8 @@ async function getJSON(url, signal) {
   return data;
 }
 function weatherURL(city,source) {
-  const url=new URL('https://api.open-meteo.com/v1/forecast');
-  url.search=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,timezone:'auto',forecast_days:7,models:source.model,
+  const url=new URL('https://api.open-meteo.com/v1/'+(source.model==='cma'?'cma':'forecast'));
+  url.search=new URLSearchParams({latitude:city.latitude,longitude:city.longitude,timezone:'auto',forecast_days:7,...(source.model==='cma'?{}:{models:source.model}),
     current:'temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m,wind_direction_10m',
     hourly:'temperature_2m,precipitation_probability,precipitation,weather_code,is_day,visibility',
     daily:'weather_code,temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset'});
@@ -177,7 +187,7 @@ async function loadWeather() {
     } else if(weather) {$('liveState').innerHTML='<i></i> 更新失败';notice('天气更新失败，保留上次预报。请检查网络后重试。');}
     else {$('liveState').innerHTML='<i></i> 连接失败';$('condition').textContent='暂时无法获取天气';$('sourceText').textContent='数据源连接失败 · 请检查网络后刷新';notice('暂时无法连接天气服务，请检查网络，或稍后点击「刷新天气」。');}
   } finally {
-    clearTimeout(timer);if(sequence===requestSequence){loading=false;document.body.classList.remove('loading-data');$('refresh').classList.remove('loading');$('refresh').disabled=false;}
+    clearTimeout(timer);if(sequence===requestSequence){loading=false;document.body.classList.remove('loading-data');$('refresh').classList.remove('loading');$('refresh').disabled=false;syncNative();}
   }
 }
 function renderEmpty() {
@@ -198,6 +208,7 @@ function renderWeather() {
   document.querySelector('.current-card').classList.toggle('rainy',cond.cls==='wet');
   $('weatherNote').textContent=cond.icon==='rain'?'雨天出发，记得带一把伞。':cond.icon==='snow'?'雪天路滑，给出行多留一点时间。':c.temperature_2m>30?'阳光热烈，记得补水与防晒。':c.temperature_2m<10?'天凉了，出门添一件外套。':c.is_day===0?'夜色渐深，愿你有一个好梦。':'把好天气，装进今天的计划。';
   renderClock();renderDaily();renderHourly();renderDetails();
+  syncNative();
   $('sourceText').textContent=`${activeSource?.name||'Open-Meteo'} · ${activeSource?.detail||''}${weather.supplemented?.length?' · 详情由 Best Match 补充':''} · Open-Meteo`;
   if(fetchedAt) $('updatedAt').textContent='获取于 '+new Intl.DateTimeFormat('zh-CN',{timeZone:weather.timezone||'Asia/Shanghai',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(fetchedAt)+'（当地）';
 }
@@ -280,6 +291,8 @@ $('cityInput').addEventListener('input',()=>{
 $('cityDialog').addEventListener('close',()=>{searchSequence++;clearTimeout(searchTimer);searchController?.abort();});
 $('sourceInfo').addEventListener('click',()=>{$('sourceCurrent').textContent=`${selectedCity.name} · 当前来源：${activeSource?.name || sourceFor(selectedCity).name}${!weather?'（尚未取得数据）':''}${weather?.supplemented?.length?'；部分详情来自 Best Match 综合模型':''}`;$('sourceDialog').showModal();});
 $('refresh').addEventListener('click',loadWeather);
+$('chinaSource').value=chinaSource;
+$('chinaSource').addEventListener('change',()=>{chinaSource=$('chinaSource').value;storage.set('weatherly-china-source',chinaSource);weather=null;activeSource=null;fetchedAt=null;renderCity();renderWeather();loadWeather();});
 $('locate').addEventListener('click',()=>{
   if(!navigator.geolocation){toast('浏览器暂不支持定位，请搜索城市。');return;}
   $('locate').disabled=true;
