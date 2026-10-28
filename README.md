@@ -1,12 +1,12 @@
-# 知天气 Android 1.4.1
+# 知天气 Android 1.4.2
 
 支持十五日预报、随天气变化的背景、城市管理和天气详情。包名 cn.weatherly.app，版本代码 11，最低 Android 6.0（API 23），编译与目标 Android 16（API 36）。沿用原签名，可覆盖升级旧版。
 
 后续续作优先阅读 [项目状态](docs/PROJECT_STATUS.md) 和 [Git版本管理](docs/Git版本管理.md)；本机工作记录保留在本地，不上传。阶段完成或中断前更新状态。1.3.0 参考 FlClash 的容器裁剪、短距离分类切换、运动期间合并刷新和快照主题淡变，独立适配 WebView 与 Android；分析及固定源码链接见 [FlClash动画分析](docs/FlClash动画分析.md)。
 
-版本通过 Git 提交和 `v1.0.0`～`v1.4.1` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases或既有网盘发布。私有源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
+版本通过 Git 提交和 `v1.0.0`～`v1.4.2` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases或既有网盘发布。私有源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
 
-11个历史版本的原签名APK及`SHA256SUMS.txt`已上传到 [全部发布版本](https://github.com/super-crystal/KnowWeather/releases)，[当前版1.4.1](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.1)可直接查看安装包和修改说明。私有仓库下载需登录有权限的GitHub账号。
+11个历史版本的原签名APK及`SHA256SUMS.txt`已上传到 [全部发布版本](https://github.com/super-crystal/KnowWeather/releases)，[当前版1.4.2](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.2)可直接查看安装包和修改说明。私有仓库下载需登录有权限的GitHub账号。
 
 右上角“城市”支持搜索、添加、切换、上移排序和移除，最多保存 20 个城市。“天气详情”提供实况、48 小时、15 日、空气质量、气象信息、日出日落、生活建议、降水雷达、台风路径、双城对比和天气预警。不含广告或内容推荐。晴、多云、阴、雾、雨、雪、雷暴及晴朗/多云夜晚分别展示对应背景，应用界面统一浅色，不随系统进入深色模式；实际夜间天气背景仍保留。
 
@@ -25,6 +25,8 @@ APK 内置界面，可离线打开并使用最近缓存；获取天气和地图�
 ## 桌面卡片
 
 保留实时天气及日出日落两种 2×2 可缩放小组件。页面底部“卡片中心”提供添加、预览、刷新与随天气/浅色两种外观。卡片独立定位，不受应用内手动选城影响；同步数据源偏好和温度单位，约每 30 分钟后台更新，受系统节电调度影响。厂商专有卡片中心是否收录由桌面系统决定。
+
+1.4.2 新增空气质量来源选择和个人密钥配置，见 [空气质量数据源](docs/空气质量数据源.md) 与 [版本说明](docs/releases/1.4.2.md)。
 
 ## 构建
 

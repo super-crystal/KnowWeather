@@ -7,12 +7,13 @@ export function installChoices(){
  document.body.append(sheet);const list=sheet.querySelector('.choice-options'),title=sheet.querySelector('h2'),caption=sheet.querySelector('small');
  let current=null,trigger=null,committing=false;
  const controls=new WeakMap();
- const descriptions={chinaSource:{auto:'按城市匹配适合的地区预报模型',cma:'通过 Open-Meteo 获取 CMA 模型预报',ecmwf:'欧洲中期天气预报中心全球模型'}};
+ const airNotes={cams:'全球 CAMS 模型估算，无需密钥',waqi:'附近监测站资料，需要个人 Token',openweather:'全球空气污染资料，需要个人 API Key',hk:'香港环保署官方 AQHI，仅香港、无需密钥'};
+ const descriptions={airSource:airNotes,airSourceDetail:airNotes,chinaSource:{auto:'按城市匹配适合的地区预报模型',cma:'通过 Open-Meteo 获取 CMA 模型预报',ecmwf:'欧洲中期天气预报中心全球模型'}};
  const mapNotes={auto:'优先在线街道，不可用时自动显示内置底图',local:'离线显示海岸线、湖泊和主要城市',online:'显示街道细节，需要联网；失败时保留内置底图'};
  function sync(select){const button=controls.get(select);if(!button)return;button.querySelector('span').textContent=select.selectedOptions[0]?.textContent||'请选择';if(button.disabled!==select.disabled)button.disabled=select.disabled;button.setAttribute('aria-label',(select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'选择')+'：'+button.querySelector('span').textContent);}
  function open(select,button){
   if(select.disabled||sheet.open)return;current=select;trigger=button;committing=false;
-  const name=select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'选择选项';title.textContent=name;caption.textContent=select.id==='chinaSource'?'天气偏好':name.includes('底图')?'地图偏好':'城市对比';
+  const name=select.getAttribute('aria-label')||document.querySelector('label[for="'+select.id+'"]')?.textContent||'选择选项';title.textContent=name;caption.textContent=select.id.startsWith('airSource')?'空气质量':select.id==='chinaSource'?'天气偏好':name.includes('底图')?'地图偏好':'城市对比';
   list.replaceChildren();const notes=descriptions[select.id]||(name.includes('底图')?mapNotes:{});
   for(const option of select.options){const row=document.createElement('button');row.type='button';row.className='choice-option';row.dataset.value=option.value;row.setAttribute('role','radio');row.setAttribute('aria-checked',String(option.selected));row.disabled=option.disabled;row.tabIndex=option.selected?0:-1;
    const text=document.createElement('span'),label=document.createElement('strong');label.textContent=option.textContent;text.append(label);if(notes[option.value]){const note=document.createElement('small');note.textContent=notes[option.value];text.append(note);}const mark=document.createElement('span');mark.className='choice-check';mark.setAttribute('aria-hidden','true');mark.textContent='✓';row.append(text,mark);list.append(row);

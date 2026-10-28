@@ -16,6 +16,7 @@ import org.json.JSONObject;
 final class WeatherServices {
   static String endpoint(Uri uri) {
     String kind=uri.getQueryParameter("kind");
+    if("hkair".equals(kind))return "https://dashboard.data.gov.hk/api/aqhi-individual?format=json";
     if("storms".equals(kind))return "https://typhoon.nmc.cn/weatherservice/typhoon/jsons/list_default";
     if("storm".equals(kind)){String id=uri.getQueryParameter("id");if(id!=null&&id.matches("[0-9]{1,12}"))return "https://typhoon.nmc.cn/weatherservice/typhoon/jsons/view_"+id;}
     if("warnings".equals(kind))return "https://forecast.weather.com.cn/api/v1/traffic/alarm/alarmMap?callback=getAlarm";
@@ -34,10 +35,11 @@ final class WeatherServices {
   static JSONObject readJSON(String url,int connectTimeout,int readTimeout)throws Exception {
     HttpURLConnection connection=(HttpURLConnection)new URL(url).openConnection();
     try {
-      connection.setConnectTimeout(connectTimeout);connection.setReadTimeout(readTimeout);connection.setInstanceFollowRedirects(false);connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Weatherly/1.2.3 (personal Android weather app)");
+      connection.setConnectTimeout(connectTimeout);connection.setReadTimeout(readTimeout);connection.setInstanceFollowRedirects(false);connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Weatherly/1.4.2 (personal Android weather app)");
       if(connection.getResponseCode()!=200)throw new Exception("Service unavailable");
       String raw;
       try(InputStream in=connection.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){out.write(b,0,n);if(out.size()>3000000)throw new Exception("Response too large");}raw=new String(out.toByteArray(),StandardCharsets.UTF_8);}
+      if(raw.trim().startsWith("["))return new JSONObject().put("stations",new JSONArray(raw));
       int start=raw.indexOf('{'),end=raw.lastIndexOf('}');if(start<0||end<start)throw new Exception("Invalid JSON");return new JSONObject(raw.substring(start,end+1));
     }finally{connection.disconnect();}
   }

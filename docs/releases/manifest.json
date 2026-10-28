@@ -1,5 +1,5 @@
 {
-  "current_version": "1.4.1",
+  "current_version": "1.4.2",
   "git_history_imported_on": "2026-10-25",
   "history_note": "Verified snapshot import, not original developer commit history.",
   "versions": [
@@ -100,6 +100,15 @@
       "sdk": 36,
       "bytes": 1289144,
       "sha256": "3775972F75D98C74381D28A2A0159EDFBAF0F53E2132CC8A96401F6075C964F6",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.2",
+      "title": "空气质量多数据源与底部切换",
+      "code": 12,
+      "sdk": 36,
+      "bytes": 1297398,
+      "sha256": "189D889F2188B2AB3E89BDF415EEFA0A0CC19ADE75FC2E252DAB8F14490127A4",
       "complete_native_source": true
     }
   ]

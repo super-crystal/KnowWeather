@@ -91,3 +91,6 @@ button:active,a:active{scale:1}
 @keyframes hero-cloud-float{50%{transform:translate3d(2px,-2px,0)}}
 @keyframes hero-moon-glow{50%{opacity:.72;transform:translate3d(0,-1px,0)}}
 @media(prefers-reduced-motion:reduce){.hero-icon svg{animation:none!important}}
+
+.air-source-settings{margin-top:24px;padding:20px 0;border-top:1px solid var(--line)}.air-source-settings .setting-row{gap:12px}.air-source-settings .choice-trigger{max-width:75%;min-width:0}.air-station{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.air-station small{display:block;font-size:11px;color:var(--muted);margin-top:4px}#airKeyForm input{display:block;box-sizing:border-box;width:100%;margin:12px 0;padding:14px;border:1px solid var(--line);border-radius:12px;font:inherit}#airKeyForm .select-row{margin-top:20px}
+.air-source-settings .choice-trigger{color:var(--ink);background:#edf2fa;border-color:#dfe8f5}
