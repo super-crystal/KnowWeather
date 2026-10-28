@@ -4,7 +4,7 @@
 
 39项检查及Edge移动视口交互通过；CAMS、香港18站真实接口通过；WAQI/OpenWeather使用模拟响应验证，尚无个人密钥实测。APK签名校验通过，摘要见发布清单。未进行安卓实体设备运行测试。[版本说明](releases/1.4.2.md)及[来源文档](空气质量数据源.md)。
 
-GitHub发布状态以对应Release和本机工作记录回读结果为准。
+1.4.2已发布至私有GitHub：[v1.4.2](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.2)。标签指向99a266d8f680e6ae603d4de709715423a5e0190f；签名APK 1,297,398字节，SHA256 `189D889F2188B2AB3E89BDF415EEFA0A0CC19ADE75FC2E252DAB8F14490127A4`。APK及SHA256SUMS.txt均已回读确认uploaded、大小和摘要一致。
 
 以下为1.4.1基线及Git迁移记录。
 
