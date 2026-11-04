@@ -35,7 +35,7 @@ final class WeatherServices {
   static JSONObject readJSON(String url,int connectTimeout,int readTimeout)throws Exception {
     HttpURLConnection connection=(HttpURLConnection)new URL(url).openConnection();
     try {
-      connection.setConnectTimeout(connectTimeout);connection.setReadTimeout(readTimeout);connection.setInstanceFollowRedirects(false);connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Weatherly/1.4.3 (personal Android weather app)");
+      connection.setConnectTimeout(connectTimeout);connection.setReadTimeout(readTimeout);connection.setInstanceFollowRedirects(false);connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Weatherly/1.4.4 (personal Android weather app)");
       if(connection.getResponseCode()!=200)throw new Exception("Service unavailable");
       String raw;
       try(InputStream in=connection.getInputStream();ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){out.write(b,0,n);if(out.size()>3000000)throw new Exception("Response too large");}raw=new String(out.toByteArray(),StandardCharsets.UTF_8);}

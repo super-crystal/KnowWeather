@@ -1,12 +1,12 @@
-# 知天气 Android 1.4.3
+# 知天气 Android 1.4.4
 
-支持十五日预报、随天气变化的背景、城市管理和天气详情。包名 cn.weatherly.app，版本代码 13，最低 Android 6.0（API 23），编译与目标 Android 16（API 36）。沿用原签名，可覆盖升级旧版。
+支持十五日预报、随天气变化的背景、城市管理和天气详情。包名 cn.weatherly.app，版本代码 14，最低 Android 6.0（API 23），编译与目标 Android 16（API 36）。沿用原签名，可覆盖升级旧版。
 
 后续续作优先阅读 [项目状态](docs/PROJECT_STATUS.md) 和 [Git版本管理](docs/Git版本管理.md)；本机工作记录保留在本地，不上传。阶段完成或中断前更新状态。1.3.0 参考 FlClash 的容器裁剪、短距离分类切换、运动期间合并刷新和快照主题淡变，独立适配 WebView 与 Android；分析及固定源码链接见 [FlClash动画分析](docs/FlClash动画分析.md)。
 
-版本通过 Git 提交和 `v1.0.0`～`v1.4.3` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases发布，邮件仅附对应GitHub链接，不再上传Google Drive。私有源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
+版本通过 Git 提交和 `v1.0.0`～`v1.4.4` 标签管理，逐版说明与APK哈希见 [发布记录](docs/releases/manifest.json)。原版本文件夹保留为本地历史备份；后续源码只维护这一份工作区，安装包通过GitHub Releases发布，邮件仅附对应GitHub链接，不再上传Google Drive。源码仓库：[super-crystal/KnowWeather](https://github.com/super-crystal/KnowWeather)。
 
-11个历史版本的原签名APK及`SHA256SUMS.txt`已上传到 [全部发布版本](https://github.com/super-crystal/KnowWeather/releases)，[当前版1.4.3](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.3)可直接查看安装包和修改说明。私有仓库下载需登录有权限的GitHub账号。
+11个历史版本的原签名APK及`SHA256SUMS.txt`已上传到 [全部发布版本](https://github.com/super-crystal/KnowWeather/releases)，[当前版1.4.4](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.4)可直接查看安装包和修改说明。仓库公开后可直接下载。
 
 右上角“城市”支持搜索、添加、切换、上移排序和移除，最多保存 20 个城市。“天气详情”提供实况、48 小时、15 日、空气质量、气象信息、日出日落、生活建议、降水雷达、台风路径、双城对比和天气预警。不含广告或内容推荐。晴、多云、阴、雾、雨、雪、雷暴及晴朗/多云夜晚分别展示对应背景，应用界面统一浅色，不随系统进入深色模式；实际夜间天气背景仍保留。
 
@@ -59,3 +59,7 @@ prepare-assets.mjs 从 web-src/ 打包离线界面，并生成原有城市目录
 
 
 1.4.1：根据用户提供的ColorOS云层法线图、反编译入口和三张参考图优化多云/阴雨视觉。改为自然碎云缘与内部光照、保留云的宽高比、前后分层漂移及屏幕外循环；顶部云团自然消散到下方天空。新增当地天气时间的晨/暮色调、缓存纹理异步加载和失败回退，风速更新平滑且无位置突跳，夜雨/夜雪不画太阳。旧版圆球状草稿已撤掉。详见 [本版分析](docs/1.4.1-云层与反编译分析.md)。
+
+## 非商业许可
+
+项目原创代码采用 [PolyForm Noncommercial 1.0.0](LICENSE)：允许符合许可的非商业使用、修改和分发，使用本项目代码或修改版本进行商业用途需另行取得书面授权。该许可不是OSI认可的开源许可；公开仓库不代表可商用。第三方组件、数据及ColorOS来源素材不在本项目重新授权范围内，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。

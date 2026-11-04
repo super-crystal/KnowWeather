@@ -20,7 +20,7 @@ const token=credential.split(/\r?\n/).find(l=>l.startsWith('password='))?.slice(
 const base='https://api.github.com/repos/super-crystal/KnowWeather';
 const headers={Authorization:'Bearer '+token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
 async function api(path,options={}){const r=await fetch(path.startsWith('https:')?path:base+path,{...options,headers:{...headers,...options.headers},signal:AbortSignal.timeout(60000)});if(!r.ok)throw new Error('GitHub HTTP '+r.status);return r.status===204?null:r.json();}
-const repo=await api('');assert.equal(repo.private,true);assert.equal(repo.permissions.push,true);
+const repo=await api('');assert.equal(repo.private,false);assert.equal(repo.permissions.push,true);
 let release;const existing=await fetch(base+'/releases/tags/'+tag,{headers,signal:AbortSignal.timeout(30000)});
 if(existing.status===404)release=await api('/releases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag_name:tag,target_commitish:head,name:'知天气 '+version,body:await readFile('docs/releases/'+version+'.md','utf8'),draft:false,prerelease:false})});
 else{assert.equal(existing.status,200);release=await existing.json();}

@@ -1,5 +1,5 @@
 {
-  "current_version": "1.4.3",
+  "current_version": "1.4.4",
   "git_history_imported_on": "2026-10-25",
   "history_note": "Verified snapshot import, not original developer commit history.",
   "versions": [
@@ -118,6 +118,15 @@
       "sdk": 36,
       "bytes": 1297398,
       "sha256": "970118D6B15D3133B0DB4CC9DA7108F1449AEB578A585134342F25766A254D24",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.4",
+      "title": "降雪量动画与非商业源码许可",
+      "code": 14,
+      "sdk": 36,
+      "bytes": 1301633,
+      "sha256": "761E1B1700CE21A6C70953B4BAB3EBF5D0D727842390C6A77228BF12F875277E",
       "complete_native_source": true
     }
   ]
