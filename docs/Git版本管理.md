@@ -8,7 +8,7 @@
 
 1.0.0～1.2.3缺少原始Java源码，只保留当时真实网页源码、资源和原DEX；`native-compiled/classes.dex`是这些版本独立重建所需的历史例外。1.2.4及以后保存对应完整Java源码。没有拿最新版源码冒充旧版。
 
-`docs/releases/`保存逐版修改说明；`docs/releases/manifest.json`记录全部已发布APK的大小和SHA256。APK存放在GitHub Releases或既有网盘，不进入Git源码历史。
+`docs/releases/`保存逐版修改说明；`docs/releases/manifest.json`记录全部已发布APK的大小和SHA256。APK存放在GitHub Releases，不进入Git源码历史。
 
 ## 日常修改
 
@@ -43,7 +43,11 @@ node --test --test-isolation=none motion.test.mjs location.test.mjs map-health.t
 3. 在该标签的GitHub Release填写版本说明，上传正式签名APK和`SHA256SUMS.txt`。
 4. 回读远程提交、标签和上传附件的大小/SHA256；将实际交付结果写入工作记录，必要时补充提交项目状态。失败或中断时记录已完成步骤与阻塞原因，恢复后继续。
 
-工作记录中的私有账号和机器操作细节保留本机；供仓库克隆后续作的项目状态同步到`docs/PROJECT_STATUS.md`。纯文档变更提交推送即可，不新增应用标签或APK。既有网盘和邮件交付约定继续保留。
+工作记录中的私有账号和机器操作细节保留本机；供仓库克隆后续作的项目状态同步到`docs/PROJECT_STATUS.md`。纯文档变更提交推送即可，不新增应用标签或APK。邮件交付遵循下方2026-11-04新约定。
+
+## 邮件交付约定（2026-11-04）
+
+后续交付邮件仅附对应 GitHub Release 分享链接，发送给本机工作记录中约定的两个邮箱。不再上传 Google Drive，不添加网盘链接；旧版网盘文件保留。此约定覆盖下方历史迁移记录中的网盘/邮件安排。
 
 ## 仓库范围
 

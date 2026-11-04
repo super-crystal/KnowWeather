@@ -1,5 +1,5 @@
 {
-  "current_version": "1.4.2",
+  "current_version": "1.4.3",
   "git_history_imported_on": "2026-10-25",
   "history_note": "Verified snapshot import, not original developer commit history.",
   "versions": [
@@ -109,6 +109,15 @@
       "sdk": 36,
       "bytes": 1297398,
       "sha256": "189D889F2188B2AB3E89BDF415EEFA0A0CC19ADE75FC2E252DAB8F14490127A4",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.3",
+      "title": "滚动时雨动画连续播放与雨势变化",
+      "code": 13,
+      "sdk": 36,
+      "bytes": 1297398,
+      "sha256": "970118D6B15D3133B0DB4CC9DA7108F1449AEB578A585134342F25766A254D24",
       "complete_native_source": true
     }
   ]
