@@ -4,7 +4,7 @@
 
 仅测试本次修改：新增3项雨动画测试通过；Edge 390×844移动视口连续上下滚动120次，8个采样点均active且帧计数持续增加，小雨/大雨截图目视确认差异。未运行旧测试套件；未进行Android手机实测，不作手机帧率结论。
 
-交付新约定：邮件仅附GitHub Release链接，仍发至本机记录中的两个邮箱；不再上传Google Drive。GitHub发布结果及APK摘要以发布清单和本机工作记录为准。
+交付新约定：邮件仅附GitHub Release链接，仍发至本机记录中的两个邮箱；不再上传Google Drive。1.4.3已发布：[GitHub Release](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.3)。标签指向e27eb53c5eb3b4a38b2ac56dea84063c9e30a0bf；APK为1,297,398字节，SHA256 `970118D6B15D3133B0DB4CC9DA7108F1449AEB578A585134342F25766A254D24`。APK和校验文件的uploaded状态、大小及摘要已回读一致。两个约定邮箱均已发送仅含GitHub链接的邮件，发送接口确认SENT。
 
 以下为历史版本记录。
 
