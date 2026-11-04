@@ -39,7 +39,7 @@ export function skySize(width,height,dpr=1,quality=1){
 export function skyRunning({hidden=false,dialog=false,reduced=false,enabled=true}={}){return enabled&&!hidden&&!dialog&&!reduced;}
 export function particleAt(p,time,profile,width,height){
  const snow=profile.snow,speed=((snow?22:270)+p.depth*(snow?28:370))*(snow?1:profile.rainSpeed??1),padding=snow?40:80,span=height+padding*2;
- const y=((p.y*span+time*speed)%span+span)%span-padding;
+ const y=((p.y*span+(snow?time*speed:((270+p.depth*370)*(profile.rainTravel??time*(profile.rainSpeed??1)))))%span+span)%span-padding;
  const dx=time*(profile.wind*(snow?.5:1.1)+12),sway=snow?Math.sin(time*.7+p.phase)*20:0;
  return {x:((p.x*(width+120)+dx+sway)%(width+120)+width+120)%(width+120)-60,y,size:snow?(.7+p.depth*2.4)*(profile.snowSize??1):(7+p.depth*20)*(profile.rainLength??1)};
 }

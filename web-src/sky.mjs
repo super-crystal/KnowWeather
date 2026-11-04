@@ -1,3 +1,4 @@
+import {PrecipitationTransition} from './precipitation-transition.mjs';
 import {weatherScene,skySize,skyRunning,particleAt,randomSequence,cloudBand} from './sky-model.mjs';
 let installed;
 const tau=Math.PI*2,hex=color=>[1,3,5].map(i=>parseInt(color.slice(i,i+2),16));
@@ -15,8 +16,8 @@ export class WeatherSky{
   if(!this.ctx)return;box.append(this.canvas);box.classList.add('sky-live');
   this.clouds=[cloudTexture(),cloudTexture(true)];this.sun=halo('#fff4c6');this.moonGlow=halo('#c8deff');
   const random=randomSequence();this.particles=Array.from({length:110},()=>({x:random(),y:random(),depth:random(),phase:random()*tau}));this.stars=Array.from({length:52},()=>({x:random(),y:random()*.57,size:.4+random()*.7,phase:random()*tau}));
-  this.profile=weatherScene();this.colors=this.profile.palette.map(hex);this.fromColors=this.colors;this.changedAt=0;this.reduced=matchMedia('(prefers-reduced-motion:reduce)');
-  this.tick=now=>{this.raf=0;if(!this.active||this.disposed)return;if(this.reduced.matches){this.state();return;}const elapsed=now-this.last;if(elapsed>=1000/this.fps-1){const start=performance.now();const dt=Math.min(.05,Math.max(0,elapsed/1000));this.time+=dt;this.drift+=(this.profile.drift-this.drift)*(1-Math.exp(-dt/3));this.cloudTravel+=dt*this.drift;this.last=now;this.draw();const cost=performance.now()-start;this.frames++;this.totalCost+=cost;this.sampleCost+=cost;if(++this.samples===120){if(this.sampleCost/this.samples>9&&this.quality===1){this.quality=.72;this.fps=30;this.resize();}this.samples=0;this.sampleCost=0;}}this.raf=requestAnimationFrame(this.tick);};
+  this.profile=weatherScene();this.precipitationTransition=new PrecipitationTransition(this.profile);this.rainTravel=0;this.colors=this.profile.palette.map(hex);this.fromColors=this.colors;this.changedAt=0;this.reduced=matchMedia('(prefers-reduced-motion:reduce)');
+  this.tick=now=>{this.raf=0;if(!this.active||this.disposed)return;if(this.reduced.matches){this.state();return;}const elapsed=now-this.last;if(elapsed>=1000/this.fps-1){const start=performance.now();const dt=Math.min(.05,Math.max(0,elapsed/1000));const oldRainSpeed=this.precipitationTransition.sample(this.time).rainSpeed;this.time+=dt;const newRainSpeed=this.precipitationTransition.sample(this.time).rainSpeed;this.rainTravel+=dt*(oldRainSpeed+newRainSpeed)/2;this.drift+=(this.profile.drift-this.drift)*(1-Math.exp(-dt/3));this.cloudTravel+=dt*this.drift;this.last=now;this.draw();const cost=performance.now()-start;this.frames++;this.totalCost+=cost;this.sampleCost+=cost;if(++this.samples===120){if(this.sampleCost/this.samples>9&&this.quality===1){this.quality=.72;this.fps=30;this.resize();}this.samples=0;this.sampleCost=0;}}this.raf=requestAnimationFrame(this.tick);};
   this.resize=()=>{const next=skySize(innerWidth,innerHeight,devicePixelRatio,this.quality);this.canvas.width=next.width;this.canvas.height=next.height;this.width=innerWidth;this.height=innerHeight;this.scale=next.scale;this.draw();};
   this.state=()=>{if(this.disposed)return;clearTimeout(this.reducedTimer);const dialog=!!document.querySelector('dialog[open]');if(this.reduced.matches&&!document.hidden&&!dialog)this.reducedTimer=setTimeout(this.state,500);const run=skyRunning({hidden:document.hidden,dialog,reduced:this.reduced.matches});if(run===this.active)return;this.active=run;cancelAnimationFrame(this.raf);this.raf=0;if(run){this.last=performance.now();this.raf=requestAnimationFrame(this.tick);}else if(!document.hidden)this.draw();};
   this.observer=new MutationObserver(this.state);this.observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
@@ -26,7 +27,7 @@ export class WeatherSky{
  setWeather(input){
   if(!this.ctx||this.disposed)return;const next=weatherScene(input),changed=next.scene!==this.profile.scene||next.night!==this.profile.night||next.phase!==this.profile.phase;
   if(changed){this.previousProfile=this.profile;this.fromColors=this.currentColors||this.colors;this.colors=next.palette.map(hex);this.changedAt=this.time;}
-  this.profile=next;this.draw();this.state();
+  this.precipitationTransition.setTarget(next,this.time,this.reduced.matches);this.profile=next;this.draw();this.state();
  }
  draw(){
   if(!this.ctx||!this.width)return;const c=this.ctx,w=this.width,h=this.height,p=this.profile,t=this.time,progress=this.reduced?.matches?1:Math.min(1,(t-this.changedAt)/1.2);
@@ -83,9 +84,12 @@ export class WeatherSky{
   const sprite=this.clouds[0];for(let i=0;i<4;i++){c.globalAlpha=.16+i*.025;const x=Math.sin(t*.035+i)*w*.4-w*.8,y=h*(.22+i*.19);c.drawImage(sprite,x,y,w*2.3,h*.38);}c.globalAlpha=1;
  }
  precipitation(c,w,h,t){
-  const p=this.profile,amount=Math.round(p.particles*(this.quality<1?.65:1));
-  if(p.snow){c.fillStyle='#f6fcff';for(const a of this.particles.slice(0,amount)){const point=particleAt(a,t,p,w,h);c.globalAlpha=.22+a.depth*.5;c.beginPath();c.arc(point.x,point.y,point.size,0,tau);c.fill();}}
-  else for(let depth=0;depth<3;depth++){c.beginPath();c.lineWidth=(.5+depth*.4)*p.rainWidth;c.strokeStyle=p.night?'#d3e7f7':'#e1f2fc';c.globalAlpha=(.1+depth*.065)*(.8+p.rainWidth*.2);for(const a of this.particles.slice(0,amount)){if(Math.floor(a.depth*3)!==depth)continue;const point=particleAt(a,t,p,w,h),slant=(.1+p.wind*.003)*point.size;c.moveTo(point.x,point.y);c.lineTo(point.x+slant,point.y+point.size);}c.stroke();}c.globalAlpha=1;
+  const visual=this.precipitationTransition.sample(t,this.reduced.matches),p={...this.profile,...visual,rainTravel:this.rainTravel},stride=this.quality<1?1/.65:1;
+  c.fillStyle='#f6fcff';c.strokeStyle=p.night?'#d3e7f7':'#e1f2fc';
+  for(let i=0;i<this.particles.length;i+=stride){const index=Math.floor(i),a=this.particles[index],opacity=visual.opacity[index];if(opacity<=0)continue;const point=particleAt(a,t,p,w,h);c.beginPath();
+   if(p.snow){c.globalAlpha=(.22+a.depth*.5)*opacity;c.arc(point.x,point.y,point.size,0,tau);c.fill();}
+   else{const depth=Math.floor(a.depth*3);c.lineWidth=(.5+depth*.4)*p.rainWidth;c.globalAlpha=(.1+depth*.065)*(.8+p.rainWidth*.2)*opacity;const slant=(.1+p.wind*.003)*point.size;c.moveTo(point.x,point.y);c.lineTo(point.x+slant,point.y+point.size);c.stroke();}
+  }c.globalAlpha=1;
  }
  status(){return {scene:this.profile.scene,phase:this.profile.phase,cloudSprites:this.cloudSprites?4:0,spriteError:!!this.spriteError,cloudLayers:this.profile.clouds,active:this.active,frames:this.frames,fps:this.fps,quality:this.quality,pixels:this.canvas.width*this.canvas.height,averageDrawMs:this.frames?this.totalCost/this.frames:0};}
  dispose(){if(this.disposed)return;this.disposed=true;this.active=false;cancelAnimationFrame(this.raf);clearTimeout(this.reducedTimer);this.observer?.disconnect();document.removeEventListener('visibilitychange',this.state);this.reduced?.removeEventListener('change',this.state);window.removeEventListener('resize',this.resize);this.canvas.remove();this.box.classList.remove('sky-live');}

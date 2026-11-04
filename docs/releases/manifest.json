@@ -1,5 +1,5 @@
 {
-  "current_version": "1.4.4",
+  "current_version": "1.4.5",
   "git_history_imported_on": "2026-10-25",
   "history_note": "Verified snapshot import, not original developer commit history.",
   "versions": [
@@ -127,6 +127,15 @@
       "sdk": 36,
       "bytes": 1301633,
       "sha256": "761E1B1700CE21A6C70953B4BAB3EBF5D0D727842390C6A77228BF12F875277E",
+      "complete_native_source": true
+    },
+    {
+      "version": "1.4.5",
+      "title": "雨雪大小与密度平滑过渡",
+      "code": 15,
+      "sdk": 36,
+      "bytes": 1301714,
+      "sha256": "E634333A2FA34514E2BB35D98FB20D00E3D01AAA77FD65A5B5FD8BABB99A517A",
       "complete_native_source": true
     }
   ]
