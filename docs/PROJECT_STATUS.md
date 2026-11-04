@@ -2,7 +2,7 @@
 
 当前版本1.4.5/code15。雨滴长度/粗细/落速、雪花大小及雨雪密度在1.6秒内平滑过渡；粒子以透明度渐入渐出。中途更新从当前显示值继续，相同目标不重复启动。累计雨滴行程避免调速导致坐标跳变。暂停时过渡同步暂停，减少动态效果时直接显示目标。
 
-仅本次7项新增测试通过；Edge 390×844下分别验证雨和雪更新瞬间画面像素一致、过渡途中滚动保持active、密度存在中间透明度、终点达到目标。未跑旧套件或进行手机实测。证据在本机output/smooth-precipitation-browser.json。发布状态及摘要见清单和本机记录。
+仅本次7项新增测试通过；Edge 390×844下分别验证雨和雪更新瞬间画面像素一致、过渡途中滚动保持active、密度存在中间透明度、终点达到目标。未跑旧套件或进行手机实测。证据在本机output/smooth-precipitation-browser.json。1.4.5已发布：[GitHub Release](https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.5)。标签指向0c13f3f6d6833aeaaab4bd68622e92179816f20e；APK1,301,714字节，SHA256 `E634333A2FA34514E2BB35D98FB20D00E3D01AAA77FD65A5B5FD8BABB99A517A`。APK与校验文件均uploaded，大小/摘要回读一致。两个约定邮箱均已发送仅GitHub链接邮件，接口SENT。
 
 以下为历史记录。
 
