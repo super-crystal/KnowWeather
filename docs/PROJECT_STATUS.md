@@ -2,7 +2,7 @@
 
 当前开发版本1.4.4 / code14：请求当前snowfall（cm），按降雪量调整雪花大小与密度，缺失时参考总降水量、再参考天气类型。滑动期间动画保持连续。仅新增3项雪动画测试、Edge移动视口雪景滚动/截图验证，以及新snowfall字段的ECMWF/CMA真实请求，均通过。未运行旧套件或手机实测。
 
-用户要求GitHub仓库公开，原创代码采用PolyForm Noncommercial 1.0.0（非商业源码可用许可，不是OSI开源许可），第三方例外见THIRD_PARTY_NOTICES.md。历史可达对象385个、文本blob198个，未命中敏感文件名或常见密钥模式，非绝对安全保证。发布/可见性/邮件回读结果见本机工作记录。
+用户要求GitHub仓库公开，原创代码采用PolyForm Noncommercial 1.0.0（非商业源码可用许可，不是OSI开源许可），第三方例外见THIRD_PARTY_NOTICES.md。历史可达对象385个、文本blob198个，未命中敏感文件名或常见密钥模式，非绝对安全保证。仓库已改为public，匿名GitHub API读取确认private=false、visibility=public。1.4.4标签835657e5326370d0369f53aa74b25d1da11f958e；Release https://github.com/super-crystal/KnowWeather/releases/tag/v1.4.4 已上传APK与SHA256SUMS，状态/大小/摘要回读一致。APK 1,301,633字节，SHA256 `761E1B1700CE21A6C70953B4BAB3EBF5D0D727842390C6A77228BF12F875277E`。邮件结果见本机工作记录。
 
 # 1.4.3 雨势动画与滚动修复（2026-11-04）
 
